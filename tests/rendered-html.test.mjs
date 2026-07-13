@@ -30,8 +30,9 @@ test("server-renders the FulfilRate upload experience", async () => {
 });
 
 test("keeps the requested formulas and red RTS columns in the product source", async () => {
-  const [page, css, packageJson] = await Promise.all([
+  const [page, layout, css, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
@@ -48,6 +49,7 @@ test("keeps the requested formulas and red RTS columns in the product source", a
   assert.match(css, /\.rts-column/);
   assert.match(packageJson, /"xlsx"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+  assert.doesNotMatch(layout, /next\/headers|generateMetadata/);
 
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
   await access(new URL("../pnpm-lock.yaml", import.meta.url));
