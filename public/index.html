@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FulfilRate — Delivery &amp; RTS Forecasts</title>
+    <meta
+      name="description"
+      content="Upload an order-status Excel file and calculate product-level delivery rates, RTS rates, and in-transit forecasts for every sender."
+    />
+    <meta property="og:title" content="FulfilRate — Delivery &amp; RTS Forecasts" />
+    <meta property="og:description" content="Excel-powered delivery and RTS forecasting for e-commerce operations." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://fulfilrate-forecast.proud-carp-2250.chatgpt.site/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/vendor/xlsx.full.min.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="site-header">
+        <a class="brand" href="#top" aria-label="FulfilRate home">
+          <span class="brand-mark" aria-hidden="true">FR</span>
+          <span>
+            <strong>FulfilRate</strong>
+            <small>Delivery intelligence</small>
+          </span>
+        </a>
+        <span class="privacy-pill">
+          <span class="privacy-dot" aria-hidden="true"></span>
+          Your file stays on this device
+        </span>
+      </header>
+
+      <section class="hero" id="top">
+        <div class="eyebrow"><span></span> E-commerce performance calculator</div>
+        <h1>Know what will deliver.<br /><em>Before it does.</em></h1>
+        <p class="hero-copy">
+          Turn your order-status Excel export into sender-level product forecasts—clean,
+          grouped, and ready for decisions.
+        </p>
+
+        <div class="upload-card" id="upload-card">
+          <div class="upload-topline">
+            <span class="step-number">01</span>
+            <span>SELECT YOUR ORDER EXPORT</span>
+          </div>
+
+          <input
+            id="excel-upload"
+            type="file"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            hidden
+          />
+
+          <div class="upload-action-row">
+            <label class="upload-button" for="excel-upload">
+              <span class="upload-arrow" aria-hidden="true">↑</span>
+              UPLOAD FILE
+            </label>
+            <div class="file-copy" id="file-copy" aria-live="polite">
+              <strong>Choose a file or drop it here</strong>
+              <span>.XLSX or .XLS only · Required columns listed below</span>
+            </div>
+            <span class="ready-badge" id="ready-badge" hidden>READY</span>
+          </div>
+
+          <div class="required-columns">
+            <span>REQUIRED COLUMNS</span>
+            <ul>
+              <li>Order Status</li>
+              <li>Sender Name</li>
+              <li>Item Name</li>
+            </ul>
+          </div>
+
+          <p class="error-message" id="error-message" role="alert" hidden></p>
+
+          <button class="generate-button" id="generate-button" type="button" disabled>
+            GENERATE
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <div class="formula-strip" aria-label="Forecast formulas">
+          <div>
+            <span class="formula-icon delivery-icon" aria-hidden="true">D</span>
+            <p><strong>DELIVERY FORECAST</strong><span>Delivered rate × In Transit</span></p>
+          </div>
+          <div>
+            <span class="formula-icon rts-icon" aria-hidden="true">R</span>
+            <p><strong>RTS FORECAST</strong><span>RTS rate × In Transit</span></p>
+          </div>
+          <p class="grouping-note">
+            <strong>SMART PRODUCT GROUPING</strong>
+            <span>“1x”, “2x”, and “Buy 1 Take 1” offers roll up to the same item.</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="results-section" id="results" hidden>
+        <div class="results-heading">
+          <div>
+            <span class="section-kicker">FORECAST REPORT</span>
+            <h2>Product performance</h2>
+            <p>Rates are based on completed orders: Delivered ÷ (Delivered + RTS).</p>
+          </div>
+          <div class="summary-cards" aria-label="Report summary">
+            <div><span>SENDERS</span><strong id="sender-total">0</strong></div>
+            <div><span>PRODUCTS</span><strong id="product-total">0</strong></div>
+            <div><span>IN TRANSIT</span><strong id="transit-total">0</strong></div>
+          </div>
+        </div>
+
+        <div class="table-toolbar">
+          <label>
+            <span>Sender</span>
+            <select id="sender-filter">
+              <option value="all">All sender names</option>
+            </select>
+          </label>
+          <label class="search-field">
+            <span>Find product</span>
+            <input id="product-search" type="search" placeholder="Search product name" />
+          </label>
+          <p class="row-count" id="row-count">0 product rows</p>
+        </div>
+
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>PRODUCT NAME</th>
+                <th>DELIVERED RATE</th>
+                <th class="rts-column">RTS RATE</th>
+                <th>DELIVERY FORECAST</th>
+                <th class="rts-column">RTS FORECAST</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+          <div class="no-results" id="no-results" hidden>No products match the current filters.</div>
+        </div>
+      </section>
+
+      <footer>
+        <strong>FulfilRate</strong>
+        <span>Private, browser-based order forecasting.</span>
+      </footer>
+    </main>
+  </body>
+</html>
