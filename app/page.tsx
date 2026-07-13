@@ -28,7 +28,56 @@ type ParsedFile = {
   sheetName: string;
 };
 
+type BrowserXlsx = {
+  read: (
+    data: ArrayBuffer,
+    options: { type: "array" },
+  ) => {
+    SheetNames: string[];
+    Sheets: Record<string, unknown>;
+  };
+  utils: {
+    sheet_to_json: <T>(
+      worksheet: unknown,
+      options: {
+        header: number;
+        defval: string;
+        raw: boolean;
+      },
+    ) => T[];
+  };
+};
+
+declare global {
+  interface Window {
+    XLSX?: BrowserXlsx;
+  }
+}
+
 const EXCEL_EXTENSIONS = [".xlsx", ".xls"];
+let sheetJsPromise: Promise<BrowserXlsx> | null = null;
+
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (sheetJsPromise) return sheetJsPromise;
+
+  sheetJsPromise = new Promise<BrowserXlsx>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "/vendor/xlsx.full.min.js";
+    script.async = true;
+    script.onload = () => {
+      if (window.XLSX) {
+        resolve(window.XLSX);
+      } else {
+        reject(new Error("The Excel reader did not load correctly."));
+      }
+    };
+    script.onerror = () => reject(new Error("The Excel reader could not be loaded."));
+    document.head.appendChild(script);
+  });
+
+  return sheetJsPromise;
+}
 
 function normaliseHeader(value: unknown) {
   return String(value ?? "")
@@ -228,7 +277,7 @@ export default function Home() {
     setQuery("");
 
     try {
-      const XLSX = await import("xlsx");
+      const XLSX = await loadSheetJs();
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
       let matched:
         | {

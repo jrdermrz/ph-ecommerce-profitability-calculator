@@ -47,10 +47,12 @@ test("keeps the requested formulas and red RTS columns in the product source", a
   assert.match(page, /\\d\+\\s\*\[x×\]/i);
   assert.match(css, /--red:\s*#d93838/i);
   assert.match(css, /\.rts-column/);
-  assert.match(packageJson, /"xlsx"/);
+  assert.match(page, /\/vendor\/xlsx\.full\.min\.js/);
+  assert.doesNotMatch(packageJson, /"xlsx"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.doesNotMatch(layout, /next\/headers|generateMetadata/);
 
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
+  await access(new URL("../public/vendor/xlsx.full.min.js", import.meta.url));
   await access(new URL("../pnpm-lock.yaml", import.meta.url));
 });
