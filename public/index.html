@@ -16,6 +16,7 @@
     <link rel="icon" href="/favicon.svg" />
     <link rel="stylesheet" href="/app.css" />
     <script src="/vendor/xlsx.full.min.js" defer></script>
+    <script src="/page-mapping.js" defer></script>
     <script src="/app.js" defer></script>
   </head>
   <body>
@@ -104,11 +105,11 @@
         <div class="results-heading">
           <div>
             <span class="section-kicker">FORECAST REPORT</span>
-            <h2>Sender performance</h2>
+            <h2>Page performance</h2>
             <p>Rates are based on completed orders: Delivered ÷ (Delivered + RTS).</p>
           </div>
           <div class="summary-cards" aria-label="Report summary">
-            <div><span>SENDERS</span><strong id="sender-total">0</strong></div>
+            <div><span>PAGES</span><strong id="sender-total">0</strong></div>
             <div><span>PRODUCTS</span><strong id="product-total">0</strong></div>
             <div><span>IN TRANSIT</span><strong id="transit-total">0</strong></div>
           </div>
@@ -116,9 +117,9 @@
 
         <div class="table-toolbar">
           <label>
-            <span>Sender</span>
+            <span>Page</span>
             <select id="sender-filter">
-              <option value="all">All sender names</option>
+              <option value="all">All page names</option>
             </select>
           </label>
           <label class="search-field">
@@ -132,7 +133,7 @@
           <table>
             <thead>
               <tr>
-                <th>SENDER NAME</th>
+                <th>PAGE NAME</th>
                 <th>DELIVERED RATE</th>
                 <th class="rts-column">RTS RATE</th>
                 <th>DELIVERY FORECAST</th>

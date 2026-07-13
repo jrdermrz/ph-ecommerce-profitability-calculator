@@ -26,11 +26,22 @@
   }
 
   function normaliseKey(value) {
-    return value
+    return String(value ?? "")
       .normalize("NFKC")
       .toLocaleLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, " ")
       .trim();
+  }
+
+  const pageNameBySender = new Map(
+    Object.entries(window.PAGE_NAME_BY_SENDER ?? {}).map(([sender, page]) => [
+      normaliseKey(sender),
+      page,
+    ]),
+  );
+
+  function pageNameFor(sender) {
+    return pageNameBySender.get(normaliseKey(sender)) ?? sender;
   }
 
   function normaliseProductName(value) {
@@ -90,17 +101,17 @@
       const product = normaliseProductName(row.item);
       if (!sender || !product) continue;
 
-      const id = normaliseKey(sender);
+      const id = `${normaliseKey(sender)}::${normaliseKey(product)}`;
       const current = groups.get(id) ?? {
         id,
         sender,
+        pageName: pageNameFor(sender),
         product,
         delivered: 0,
         rts: 0,
         inTransit: 0,
       };
       current[bucket] += 1;
-      if (!current.product) current.product = product;
       groups.set(id, current);
     }
 
@@ -120,7 +131,11 @@
       .sort((a, b) => {
         const aVolume = a.delivered + a.rts + a.inTransit;
         const bVolume = b.delivered + b.rts + b.inTransit;
-        return bVolume - aVolume || a.product.localeCompare(b.product);
+        return (
+          a.pageName.localeCompare(b.pageName) ||
+          a.product.localeCompare(b.product) ||
+          bVolume - aVolume
+        );
       });
   }
 
@@ -256,7 +271,8 @@
       const queryMatches =
         !query ||
         normaliseKey(item.product).includes(query) ||
-        normaliseKey(item.sender).includes(query);
+        normaliseKey(item.sender).includes(query) ||
+        normaliseKey(item.pageName).includes(query);
       return senderMatches && queryMatches;
     });
 
@@ -266,7 +282,7 @@
       const productCell = document.createElement("td");
       const product = document.createElement("strong");
       const sender = document.createElement("span");
-      product.textContent = item.sender;
+      product.textContent = item.pageName;
       sender.className = "item-label";
       sender.textContent = item.product;
       productCell.append(product, sender);
@@ -287,7 +303,7 @@
       resultsBody.appendChild(row);
     }
 
-    rowCount.textContent = `${filtered.length.toLocaleString()} sender rows`;
+    rowCount.textContent = `${filtered.length.toLocaleString()} page-item rows`;
     noResults.hidden = filtered.length > 0;
   }
 
@@ -297,25 +313,26 @@
       return;
     }
 
-    const senders = Array.from(new Set(metrics.map((item) => item.sender))).sort((a, b) =>
-      a.localeCompare(b),
-    );
+    const senders = Array.from(
+      new Map(metrics.map((item) => [item.sender, item.pageName])).entries(),
+    ).sort((a, b) => a[1].localeCompare(b[1]));
+    const pages = new Set(metrics.map((item) => normaliseKey(item.pageName)));
     const products = new Set(metrics.map((item) => normaliseKey(item.product)));
     const transit = metrics.reduce((sum, item) => sum + item.inTransit, 0);
 
     senderFilter.replaceChildren();
     const allOption = document.createElement("option");
     allOption.value = "all";
-    allOption.textContent = "All sender names";
+    allOption.textContent = "All page names";
     senderFilter.appendChild(allOption);
-    for (const sender of senders) {
+    for (const [sender, pageName] of senders) {
       const option = document.createElement("option");
       option.value = sender;
-      option.textContent = sender;
+      option.textContent = pageName;
       senderFilter.appendChild(option);
     }
 
-    document.getElementById("sender-total").textContent = senders.length.toLocaleString();
+    document.getElementById("sender-total").textContent = pages.size.toLocaleString();
     document.getElementById("product-total").textContent = products.size.toLocaleString();
     document.getElementById("transit-total").textContent = transit.toLocaleString();
     productSearch.value = "";

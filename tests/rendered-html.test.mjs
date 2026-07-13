@@ -39,32 +39,37 @@ test("server-renders the FulfilRate upload experience", async () => {
 });
 
 test("keeps the requested formulas and red RTS columns in the product source", async () => {
-  const [html, appScript, worker, css, packageJson] = await Promise.all([
+  const [html, appScript, worker, css, packageJson, pageMapping] = await Promise.all([
     readFile(new URL("../public/index.html", import.meta.url), "utf8"),
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../public/app.css", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../public/page-mapping.js", import.meta.url), "utf8"),
   ]);
 
   assert.match(html, /Delivered rate × In Transit/);
   assert.match(html, /RTS rate × In Transit/);
   assert.match(html, /DELIVERED RATE/);
-  assert.match(html, /SENDER NAME/);
+  assert.match(html, /PAGE NAME/);
   assert.match(html, /RTS RATE/);
   assert.match(html, /DELIVERY FORECAST/);
   assert.match(html, /RTS FORECAST/);
   assert.match(appScript, /buy\\s\*\\d\+/i);
   assert.match(appScript, /\\d\+\\s\*\[x×\]/i);
-  assert.match(appScript, /const id = normaliseKey\(sender\)/);
+  assert.match(appScript, /normaliseKey\(sender\).*normaliseKey\(product\)/s);
+  assert.match(appScript, /pageNameFor\(sender\)/);
+  assert.match(pageMapping, /"TAURUS SZ": "SOLAR NAME"/);
   assert.match(css, /--red:\s*#d93838/i);
   assert.match(css, /\.rts-column/);
   assert.match(html, /\/vendor\/xlsx\.full\.min\.js/);
+  assert.match(html, /\/page-mapping\.js/);
   assert.doesNotMatch(packageJson, /"xlsx"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.doesNotMatch(worker, /vinext|node:/);
 
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
   await access(new URL("../public/vendor/xlsx.full.min.js", import.meta.url));
+  await access(new URL("../public/page-mapping.js", import.meta.url));
   await access(new URL("../pnpm-lock.yaml", import.meta.url));
 });
