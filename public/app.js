@@ -14,7 +14,8 @@
   const resultsBody = document.getElementById("results-body");
   const noResults = document.getElementById("no-results");
   const rowCount = document.getElementById("row-count");
-  const { normaliseProductName } = window.RTSProductNormalizer;
+  const { normaliseProductName, productFingerprint, productsAreEquivalent } =
+    window.RTSProductNormalizer;
 
   let parsedFile = null;
   let metrics = [];
@@ -66,36 +67,79 @@
   }
 
   function computeMetrics(rows) {
-    const groups = new Map();
+    const groups = [];
+    const groupsBySender = new Map();
 
     for (const row of rows) {
       const bucket = classifyStatus(row.status);
       if (!bucket) continue;
       const sender = row.sender.trim();
       const product = normaliseProductName(row.item);
-      if (!sender || !product) continue;
+      const fingerprint = productFingerprint(row.item);
+      if (!sender || !product || !fingerprint) continue;
 
-      const id = `${normaliseKey(sender)}::${normaliseKey(product)}`;
-      const current = groups.get(id) ?? {
-        id,
-        sender,
-        pageName: pageNameFor(sender),
-        product,
-        delivered: 0,
-        rts: 0,
-        inTransit: 0,
-      };
+      const senderKey = normaliseKey(sender);
+      const senderGroups = groupsBySender.get(senderKey) ?? [];
+      const matchingGroups = senderGroups.filter((group) =>
+        group.fingerprints.some((knownFingerprint) =>
+          productsAreEquivalent(knownFingerprint, fingerprint),
+        ),
+      );
+      let current = matchingGroups[0];
+      if (!current) {
+        current = {
+          id: `${senderKey}::${fingerprint.replace(/\s+/g, "")}`,
+          sender,
+          pageName: pageNameFor(sender),
+          product,
+          fingerprint,
+          fingerprints: [fingerprint],
+          labelCounts: new Map(),
+          delivered: 0,
+          rts: 0,
+          inTransit: 0,
+        };
+        senderGroups.push(current);
+        groupsBySender.set(senderKey, senderGroups);
+        groups.push(current);
+      } else {
+        if (!current.fingerprints.includes(fingerprint)) current.fingerprints.push(fingerprint);
+        for (const duplicate of matchingGroups.slice(1)) {
+          current.delivered += duplicate.delivered;
+          current.rts += duplicate.rts;
+          current.inTransit += duplicate.inTransit;
+          for (const knownFingerprint of duplicate.fingerprints) {
+            if (!current.fingerprints.includes(knownFingerprint)) {
+              current.fingerprints.push(knownFingerprint);
+            }
+          }
+          for (const [label, count] of duplicate.labelCounts) {
+            current.labelCounts.set(label, (current.labelCounts.get(label) ?? 0) + count);
+          }
+          senderGroups.splice(senderGroups.indexOf(duplicate), 1);
+          groups.splice(groups.indexOf(duplicate), 1);
+        }
+      }
       current[bucket] += 1;
-      groups.set(id, current);
+      current.labelCounts.set(product, (current.labelCounts.get(product) ?? 0) + 1);
     }
 
-    return Array.from(groups.values())
+    return groups
       .map((group) => {
+        const labels = Array.from(group.labelCounts.entries());
+        const readableLabels = labels.filter(
+          ([label]) => normaliseKey(label).split(/\s+/).length > 1 || label.length < 14,
+        );
+        const product = (readableLabels.length ? readableLabels : labels).sort(
+          (a, b) => b[1] - a[1] || a[0].length - b[0].length || a[0].localeCompare(b[0]),
+        )[0][0];
         const completed = group.delivered + group.rts;
         const deliveredRate = completed ? group.delivered / completed : 0;
         const rtsRate = completed ? group.rts / completed : 0;
+        const { labelCounts, fingerprints, ...reportGroup } = group;
         return {
-          ...group,
+          ...reportGroup,
+          product,
           deliveredRate,
           rtsRate,
           deliveryForecast: deliveredRate * group.inTransit,

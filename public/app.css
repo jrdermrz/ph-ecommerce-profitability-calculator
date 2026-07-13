@@ -10,6 +10,7 @@
   --coral-dark: #ff815e;
   --red: #ff5d63;
   --red-soft: rgba(255, 93, 99, 0.12);
+  --sky: #63c7ff;
   --yellow: #f5c94c;
 }
 
@@ -179,24 +180,12 @@ select {
   letter-spacing: -0.065em;
 }
 
-.hero h1 em {
-  position: relative;
-  color: var(--mint-dark);
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 500;
+.hero h1 .delivered-word {
+  color: var(--sky);
 }
 
-.hero h1 em::after {
-  content: "";
-  position: absolute;
-  left: 2%;
-  right: -1%;
-  bottom: -7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--yellow);
-  transform: rotate(-1.5deg);
-  z-index: -1;
+.hero h1 .rts-word {
+  color: var(--red);
 }
 
 .hero-copy {

@@ -33,7 +33,8 @@ test("server-renders the RTS CHECKER upload experience", async () => {
   assert.match(html, /<title>RTS CHECKER — Delivered &amp; RTS Rates<\/title>/i);
   assert.match(html, /FAST RTS CHECKER/);
   assert.match(html, /DETERMINE YOUR/);
-  assert.match(html, /DELIVERED AND RTS RATES/);
+  assert.match(html, /class="delivered-word">DELIVERED<\/span>/);
+  assert.match(html, /class="rts-word">RTS<\/span>/);
   assert.doesNotMatch(html, /hero-copy|FulfilRate/i);
   assert.match(html, /UPLOAD FILE/);
   assert.match(html, /GENERATE/);
@@ -64,11 +65,19 @@ test("keeps the requested formulas and red RTS columns in the product source", a
   assert.match(normalizerScript, /buy\\s\*\\d\+/i);
   assert.match(normalizerScript, /variantLabel/);
   assert.match(normalizerScript, /stripRepeatedQuantitySuffix/);
-  assert.match(appScript, /normaliseKey\(sender\).*normaliseKey\(product\)/s);
+  assert.match(normalizerScript, /productFingerprint/);
+  assert.match(normalizerScript, /productsAreEquivalent/);
+  assert.match(normalizerScript, /damerauLevenshtein/);
+  assert.match(appScript, /group\.fingerprints\.some/);
+  assert.match(appScript, /productsAreEquivalent\(knownFingerprint, fingerprint\)/);
   assert.match(appScript, /pageNameFor\(sender\)/);
   assert.match(pageMapping, /"TAURUS SZ": "SOLAR NAME"/);
   assert.match(css, /--red:\s*#ff5d63/i);
+  assert.match(css, /--sky:\s*#63c7ff/i);
   assert.match(css, /color-scheme:\s*dark/i);
+  assert.match(css, /\.hero h1 \.delivered-word[\s\S]*color:\s*var\(--sky\)/i);
+  assert.match(css, /\.hero h1 \.rts-word[\s\S]*color:\s*var\(--red\)/i);
+  assert.doesNotMatch(css, /\.hero h1 em|Georgia/);
   assert.match(css, /\.rts-column/);
   assert.match(html, /\/vendor\/xlsx\.full\.min\.js/);
   assert.match(html, /\/page-mapping\.js/);
@@ -88,7 +97,8 @@ test("merges variants and quantity offers without merging different products", a
   const source = await readFile(new URL("../public/product-normalizer.js", import.meta.url), "utf8");
   const sandbox = { window: {} };
   runInNewContext(source, sandbox);
-  const { normaliseProductName } = sandbox.window.RTSProductNormalizer;
+  const { normaliseProductName, productFingerprint, productsAreEquivalent } =
+    sandbox.window.RTSProductNormalizer;
 
   assert.equal(normaliseProductName("FOLDABLE TUMBLER"), "FOLDABLE TUMBLER");
   assert.equal(normaliseProductName("FOLDABLE TUMBLER: color: black"), "FOLDABLE TUMBLER");
@@ -106,7 +116,45 @@ test("merges variants and quantity offers without merging different products", a
   );
   assert.equal(normaliseProductName("MULTI PURPOSE RACK - BLACK"), "MULTI PURPOSE RACK");
   assert.equal(normaliseProductName("1X BATH SCRUBBER"), "BATH SCRUBBER");
+  assert.equal(normaliseProductName("2XX HAND PRESSED MEAT GRINDER"), "HAND PRESSED MEAT GRINDER");
+  assert.equal(normaliseProductName("2X SET KID'S LEARNING-BOOKS"), "KID'S LEARNING-BOOKS");
   assert.equal(normaliseProductName("BATH SCRUBBER"), "BATH SCRUBBER");
   assert.equal(normaliseProductName("HAIR DRYER"), "HAIR DRYER");
   assert.notEqual(normaliseProductName("BATH SCRUBBER"), normaliseProductName("HAIR DRYER"));
+
+  const sameProductPairs = [
+    ["10 PCS ACRYLIC ADHESIVE WALL HOOK", "10PCSACRYLICADHESIVEWALLHOOK"],
+    ["24X GOLDEN UTENSILS", "48 GOLDEN UTENSILS"],
+    ["BUY 1 TAKE 1 SAFETY DOOR LOCK", "BUY1TAKE1SAFETYDOORLOCK"],
+    ["BUY 1 GET 1 MAGIC BLUSHER", "4BUY 1 GET 1 MAGIC BLUSHER"],
+    ["BUY 1 GET 1 SINK & DRAIN CLEANER", "BUY1GET1SINK&DRAINCLEANER"],
+    ["1X CROSS BODY BAG", "1XCROSSBODYBAG"],
+    ["1X SUNSHADE NET (2M X 4M)", "1X-3MX5M-SUNSHADENET"],
+    ["STICKY MOUSE GLUE", "BIG STICKY MICE GLUE TRAP"],
+    ["MULTIPURPOSE SHINE-CLEANER", "SHINE PRO CLEANER"],
+    ["BATH SCRUBBER", "BATH SCRUBER"],
+    ["FOLDABLE STORAGE", "FOLDABLE STORAGE BOX"],
+  ];
+  for (const [left, right] of sameProductPairs) {
+    assert.equal(
+      productsAreEquivalent(productFingerprint(left), productFingerprint(right)),
+      true,
+      `${left} should match ${right}`,
+    );
+  }
+
+  const differentProductPairs = [
+    ["CROSS BODY BAG", "LEATHER BAG"],
+    ["KNIFE SHARPENER", "SANDOK SET"],
+    ["MAGIC BLUSHER", "TINTED SUNSCREEN"],
+    ["SUNSHADE NET", "WOODEN PLATE"],
+    ["COOKING SET", "SANDOK SET"],
+  ];
+  for (const [left, right] of differentProductPairs) {
+    assert.equal(
+      productsAreEquivalent(productFingerprint(left), productFingerprint(right)),
+      false,
+      `${left} should stay separate from ${right}`,
+    );
+  }
 });
