@@ -14,6 +14,7 @@
   const resultsBody = document.getElementById("results-body");
   const noResults = document.getElementById("no-results");
   const rowCount = document.getElementById("row-count");
+  const { normaliseProductName } = window.RTSProductNormalizer;
 
   let parsedFile = null;
   let metrics = [];
@@ -42,33 +43,6 @@
 
   function pageNameFor(sender) {
     return pageNameBySender.get(normaliseKey(sender)) ?? sender;
-  }
-
-  function normaliseProductName(value) {
-    const original = value.normalize("NFKC").replace(/\s+/g, " ").trim();
-    let cleaned = original
-      .replace(
-        /\([^)]*(?:buy\s*\d+|take\s*\d+|get\s*\d+|free|qty|quantity|pack\s+of\s+\d+|\d+\s*[x×])[^)]*\)/gi,
-        " ",
-      )
-      .replace(/\bbuy\s*\d+\s*(?:take|get)\s*\d+(?:\s*free)?\b/gi, " ")
-      .replace(/\bb\s*\d+\s*t\s*\d+\b/gi, " ")
-      .replace(/^\s*(?:qty|quantity)\s*[:\-]?\s*\d+\s*(?:[x×]\s*)?/i, "")
-      .replace(/^\s*\d+\s*[x×]\s*/i, "")
-      .replace(/^\s*[x×]\s*\d+\s*/i, "")
-      .replace(/^\s*\d+\s*(?:pcs?|pieces?|packs?|sets?|bottles?|units?)\s+(?:of\s+)?/i, "")
-      .replace(
-        /\s*[-–—|:/]?\s*(?:\d+\s*[x×]|[x×]\s*\d+|\d+\s*(?:pcs?|pieces?|packs?|sets?|bottles?|units?))\s*$/i,
-        "",
-      )
-      .replace(/^\s*(?:free|promo|offer)\s*[-–—|:/]?\s*/i, "")
-      .replace(/\s*[-–—|:/]\s*(?:free|promo|offer)\s*$/i, "")
-      .replace(/^[\s\-–—|:/]+|[\s\-–—|:/]+$/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (!cleaned) cleaned = original;
-    return cleaned;
   }
 
   function classifyStatus(value) {

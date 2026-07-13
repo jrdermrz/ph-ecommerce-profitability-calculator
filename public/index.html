@@ -3,30 +3,30 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FulfilRate — Delivery &amp; RTS Forecasts</title>
+    <title>RTS CHECKER — Delivered &amp; RTS Rates</title>
     <meta
       name="description"
-      content="Upload an order-status Excel file and calculate product-level delivery rates, RTS rates, and in-transit forecasts for every sender."
+      content="Upload an order-status Excel file and check delivered rates, RTS rates, and in-transit forecasts for every page and product."
     />
-    <meta property="og:title" content="FulfilRate — Delivery &amp; RTS Forecasts" />
-    <meta property="og:description" content="Excel-powered delivery and RTS forecasting for e-commerce operations." />
+    <meta property="og:title" content="RTS CHECKER — Delivered &amp; RTS Rates" />
+    <meta property="og:description" content="Fast Excel-powered delivered and RTS rate checking for e-commerce operations." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://fulfilrate-forecast.proud-carp-2250.chatgpt.site/og.png" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" href="/favicon.svg" />
     <link rel="stylesheet" href="/app.css" />
     <script src="/vendor/xlsx.full.min.js" defer></script>
     <script src="/page-mapping.js" defer></script>
+    <script src="/product-normalizer.js" defer></script>
     <script src="/app.js" defer></script>
   </head>
   <body>
     <main>
       <header class="site-header">
-        <a class="brand" href="#top" aria-label="FulfilRate home">
-          <span class="brand-mark" aria-hidden="true">FR</span>
+        <a class="brand" href="#top" aria-label="RTS CHECKER home">
+          <span class="brand-mark" aria-hidden="true">RTS</span>
           <span>
-            <strong>FulfilRate</strong>
-            <small>Delivery intelligence</small>
+            <strong>RTS CHECKER</strong>
+            <small>Delivered &amp; RTS intelligence</small>
           </span>
         </a>
         <span class="privacy-pill">
@@ -36,12 +36,8 @@
       </header>
 
       <section class="hero" id="top">
-        <div class="eyebrow"><span></span> E-commerce performance calculator</div>
-        <h1>Know what will deliver.<br /><em>Before it does.</em></h1>
-        <p class="hero-copy">
-          Turn your order-status Excel export into sender-level page forecasts—clean,
-          grouped, and ready for decisions.
-        </p>
+        <div class="eyebrow"><span></span> FAST RTS CHECKER</div>
+        <h1>DETERMINE YOUR<br /><em>DELIVERED AND RTS RATES</em></h1>
 
         <div class="upload-card" id="upload-card">
           <div class="upload-topline">
@@ -96,7 +92,7 @@
           </div>
           <p class="grouping-note">
             <strong>SMART PRODUCT GROUPING</strong>
-            <span>“1x”, “2x”, and “Buy 1 Take 1” offers roll up to the same item.</span>
+            <span>Offers, quantities, colors, sizes, and other variants roll up to the same item.</span>
           </p>
         </div>
       </section>
@@ -147,7 +143,7 @@
       </section>
 
       <footer>
-        <strong>FulfilRate</strong>
+        <strong>RTS CHECKER</strong>
         <span>Private, browser-based order forecasting.</span>
       </footer>
     </main>
