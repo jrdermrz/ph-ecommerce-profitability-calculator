@@ -50,11 +50,13 @@ test("keeps the requested formulas and red RTS columns in the product source", a
   assert.match(html, /Delivered rate × In Transit/);
   assert.match(html, /RTS rate × In Transit/);
   assert.match(html, /DELIVERED RATE/);
+  assert.match(html, /SENDER NAME/);
   assert.match(html, /RTS RATE/);
   assert.match(html, /DELIVERY FORECAST/);
   assert.match(html, /RTS FORECAST/);
   assert.match(appScript, /buy\\s\*\\d\+/i);
   assert.match(appScript, /\\d\+\\s\*\[x×\]/i);
+  assert.match(appScript, /const id = normaliseKey\(sender\)/);
   assert.match(css, /--red:\s*#d93838/i);
   assert.match(css, /\.rts-column/);
   assert.match(html, /\/vendor\/xlsx\.full\.min\.js/);

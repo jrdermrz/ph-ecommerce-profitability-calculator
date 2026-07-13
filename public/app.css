@@ -649,7 +649,7 @@ td span {
   font-size: 10px;
 }
 
-.sender-label {
+.item-label {
   width: fit-content;
   padding: 4px 7px;
   border-radius: 4px;

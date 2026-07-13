@@ -90,7 +90,7 @@
       const product = normaliseProductName(row.item);
       if (!sender || !product) continue;
 
-      const id = `${normaliseKey(sender)}::${normaliseKey(product)}`;
+      const id = normaliseKey(sender);
       const current = groups.get(id) ?? {
         id,
         sender,
@@ -100,6 +100,7 @@
         inTransit: 0,
       };
       current[bucket] += 1;
+      if (!current.product) current.product = product;
       groups.set(id, current);
     }
 
@@ -265,9 +266,9 @@
       const productCell = document.createElement("td");
       const product = document.createElement("strong");
       const sender = document.createElement("span");
-      product.textContent = item.product;
-      sender.className = "sender-label";
-      sender.textContent = item.sender;
+      product.textContent = item.sender;
+      sender.className = "item-label";
+      sender.textContent = item.product;
       productCell.append(product, sender);
       row.appendChild(productCell);
       appendCell(row, formatPercent(item.deliveredRate), `${item.delivered.toLocaleString()} delivered`);
@@ -286,7 +287,7 @@
       resultsBody.appendChild(row);
     }
 
-    rowCount.textContent = `${filtered.length.toLocaleString()} product rows`;
+    rowCount.textContent = `${filtered.length.toLocaleString()} sender rows`;
     noResults.hidden = filtered.length > 0;
   }
 
