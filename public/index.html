@@ -170,19 +170,13 @@
               <p class="column-note">Required columns: <strong>Page Name, Item Name, COD, Adspent, Orders</strong></p>
             </div>
 
-            <div class="sync-step">
-              <div class="sync-step-heading"><span>03</span><div><strong>Calculation settings</strong><small>Applied to every uploaded row</small></div></div>
-              <div class="sync-settings-grid">
-                <label class="field">
-                  <span>COD fee</span>
-                  <span class="input-wrap"><input id="sync-cod-fee" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
-                </label>
-                <label class="field">
-                  <span>Shipping fee per order</span>
-                  <span class="input-wrap"><b>₱</b><input id="sync-shipping-fee" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
-                </label>
+            <div class="sync-step sync-rules-step">
+              <div class="sync-step-heading"><span>03</span><div><strong>Fixed calculation rules</strong><small>Automatically applied to every uploaded row</small></div></div>
+              <div class="sync-fixed-rules" aria-label="Fixed Data Sync calculation rules">
+                <p><strong>1%</strong><span>COD fee</span></p>
+                <p><strong>₱37.50</strong><span>Shipping per order</span></p>
+                <p><strong>12%</strong><span>VAT</span></p>
               </div>
-              <div class="fixed-assumptions single-assumption"><p><span>12%</span> VAT used by the workbook</p></div>
             </div>
           </form>
 
@@ -191,7 +185,7 @@
             <div class="sync-main-net">
               <span>Projected net without RTS</span>
               <strong id="sync-net-without-rts">₱—</strong>
-              <small id="sync-caption">Upload both data sources and complete the settings.</small>
+              <small id="sync-caption">Upload the product master and daily performance data.</small>
             </div>
             <div class="sync-secondary-net"><span>Projected net with RTS</span><strong id="sync-net-with-rts">₱—</strong></div>
             <div class="net-ratio-card"><span>Net Ratio</span><strong id="sync-net-ratio">1:—</strong><small>Projected net without RTS ÷ ad spend</small></div>

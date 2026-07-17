@@ -41,6 +41,10 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(html, /Projected net with RTS/);
   assert.match(html, /Net Ratio/);
   assert.match(html, /NET PER PAGE/);
+  assert.match(html, /Fixed calculation rules/);
+  assert.match(html, /Shipping per order/);
+  assert.match(html, /₱37\.50/);
+  assert.doesNotMatch(html, /id="sync-cod-fee"|id="sync-shipping-fee"/);
   assert.match(html, /https:\/\/ph-ecommerce-profitability-calculator\.example\/og\.png/);
   assert.doesNotMatch(html, /__SITE_ORIGIN__|RTS CHECKER|FulfilRate|KitaKalkula|Item name|QUICK PROFIT CHECK|I-compute ang kita/);
   const inputOrder = ["cod", "cod-fee", "rts", "cog", "ad-spend", "order-qty", "shipping-fee"]
@@ -112,11 +116,11 @@ test("calculator handles boundaries without circular or invalid output", async (
   assert.doesNotMatch(source, /adSpend\s*\/\s*cpp|cpp\s*\/\s*cpp/i);
 });
 
-test("data sync matches the latest product record and calculates Net Ratio per page", async () => {
+test("data sync uses fixed fees, matches the latest product record, and calculates Net Ratio per page", async () => {
   const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   const sandbox = { window: {} };
   runInNewContext(source, sandbox);
-  const { parseProductRows, parseDailyRows, calculateDataSync } = sandbox.window.DataSyncCalculator;
+  const { DATA_SYNC_SETTINGS, parseProductRows, parseDailyRows, calculateDataSync } = sandbox.window.DataSyncCalculator;
 
   const products = parseProductRows([
     { "Effective Date": "2026-01-01", "Item Name": "Gold Utensils", "RTS Rate": "25%", COG: "₱180" },
@@ -125,17 +129,19 @@ test("data sync matches the latest product record and calculates Net Ratio per p
   const daily = parseDailyRows([
     { "Page Name": "Luxe Kitchenware", "Item Name": "Gold Utensils", COD: "₱1,000", ADSPENT: "₱10,000", Orders: 100 },
   ]);
-  const result = calculateDataSync(daily, products, { codFeePercent: 3, shippingFee: 40 });
+  const result = calculateDataSync(daily, products, DATA_SYNC_SETTINGS);
 
   assert.equal(products.length, 2);
   assert.equal(daily.length, 1);
   assert.equal(result.unmatchedItems.length, 0);
   assert.equal(result.matchedItems, 1);
-  assert.ok(Math.abs(result.netWithoutRts - 42112) < 1e-9);
-  assert.ok(Math.abs(result.netWithRts - 46112) < 1e-9);
-  assert.ok(Math.abs(result.netRatio - 4.2112) < 1e-9);
+  assert.equal(DATA_SYNC_SETTINGS.codFeePercent, 1);
+  assert.equal(DATA_SYNC_SETTINGS.shippingFee, 37.5);
+  assert.ok(Math.abs(result.netWithoutRts - 44154) < 1e-9);
+  assert.ok(Math.abs(result.netWithRts - 48154) < 1e-9);
+  assert.ok(Math.abs(result.netRatio - 4.4154) < 1e-9);
   assert.equal(result.pages[0].pageName, "Luxe Kitchenware");
-  assert.ok(Math.abs(result.pages[0].netRatio - 4.2112) < 1e-9);
+  assert.ok(Math.abs(result.pages[0].netRatio - 4.4154) < 1e-9);
 });
 
 test("packages standalone and GitHub Pages quick calculators", async () => {

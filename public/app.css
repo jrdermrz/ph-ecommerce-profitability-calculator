@@ -123,7 +123,7 @@ button {
 .intro {
   width: min(calc(100% - 40px), 960px);
   margin: 0 auto;
-  padding: clamp(64px, 9vw, 112px) 0 36px;
+  padding: clamp(28px, 4vw, 52px) 0 28px;
   text-align: center;
 }
 
@@ -885,10 +885,35 @@ input::-webkit-inner-spin-button {
 
 .column-note strong { color: #b7c6bf; }
 
-.sync-settings-grid {
+.sync-rules-step {
+  padding-bottom: 2px;
+}
+
+.sync-fixed-rules {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sync-fixed-rules p {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px 3px 10px 3px;
+  background: rgba(56, 215, 161, 0.06);
+}
+
+.sync-fixed-rules strong {
+  color: var(--green-bright);
+  font-size: 15px;
+}
+
+.sync-fixed-rules span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
 }
 
 .sync-summary {
@@ -1109,7 +1134,7 @@ input:focus-visible {
   }
 
   .intro {
-    padding-top: 54px;
+    padding-top: 26px;
   }
 
   .intro h1 {
@@ -1158,7 +1183,7 @@ input:focus-visible {
     flex-direction: column;
   }
 
-  .sync-settings-grid,
+  .sync-fixed-rules,
   .sync-totals {
     grid-template-columns: 1fr;
   }

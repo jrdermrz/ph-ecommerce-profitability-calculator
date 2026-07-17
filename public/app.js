@@ -2,6 +2,7 @@
   "use strict";
 
   const VAT_RATE = 0.12;
+  const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 37.5 });
 
   function finiteNumber(value, fallback = 0) {
     const parsed = Number(value);
@@ -239,6 +240,7 @@
 
   window.NetIncomeCalculator = { VAT_RATE, computeNetIncome };
   window.DataSyncCalculator = {
+    DATA_SYNC_SETTINGS,
     normaliseItemName,
     parseProductRows,
     parseDailyRows,
@@ -366,8 +368,6 @@
     dailyFile: document.getElementById("daily-data-file"),
     productStatus: document.getElementById("product-db-status"),
     dailyStatus: document.getElementById("daily-data-status"),
-    codFee: document.getElementById("sync-cod-fee"),
-    shippingFee: document.getElementById("sync-shipping-fee"),
     summary: document.getElementById("sync-summary"),
     status: document.getElementById("sync-status"),
     netWithoutRts: document.getElementById("sync-net-without-rts"),
@@ -457,7 +457,6 @@
 
   function renderDataSync() {
     const productRecords = [...sharedProductRecords, ...uploadedProductRecords];
-    const settingsComplete = sync.codFee.value !== "" && sync.shippingFee.value !== "";
     renderUnmatched([]);
 
     if (!productRecords.length) {
@@ -468,15 +467,7 @@
       renderSyncEmpty("Daily data needed", "Upload the daily performance file shown in your workflow.");
       return;
     }
-    if (!settingsComplete) {
-      renderSyncEmpty("Complete the settings", "Enter the COD fee and shipping fee used for this run.");
-      return;
-    }
-
-    const result = calculateDataSync(dailyRows, productRecords, {
-      codFeePercent: sync.codFee.value,
-      shippingFee: sync.shippingFee.value,
-    });
+    const result = calculateDataSync(dailyRows, productRecords, DATA_SYNC_SETTINGS);
     renderUnmatched(result.unmatchedItems);
     sync.matchedItems.textContent = integer.format(result.matchedItems);
 
@@ -569,9 +560,6 @@
     }
     renderDataSync();
   });
-
-  sync.codFee.addEventListener("input", renderDataSync);
-  sync.shippingFee.addEventListener("input", renderDataSync);
 
   function showView(view) {
     for (const panel of document.querySelectorAll("[data-panel]")) {
