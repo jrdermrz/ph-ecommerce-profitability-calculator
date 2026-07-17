@@ -8,7 +8,7 @@ async function render() {
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
-  return worker.fetch(new Request("https://kitakalkula.example/"), {
+  return worker.fetch(new Request("https://profit-actually.example/"), {
     ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
   });
 }
@@ -18,21 +18,33 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
-  const html = await response.text();
-  assert.match(html, /<title>KitaKalkula — PH E-commerce Net Income Calculator<\/title>/i);
+  const [html, css, app] = await Promise.all([
+    response.text(),
+    readFile(new URL("../public/app.css", import.meta.url), "utf8"),
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(html, /<title>Profit, Actually\./i);
   assert.match(html, /Quick Calculator/);
   assert.match(html, /Upload Your Data/);
-  assert.match(html, /I-compute ang kita/);
+  assert.match(html, /ARE YOU SURE YOU'RE/);
+  assert.match(html, /PROFITABLE\?/);
+  assert.match(html, /Your quick local e-commerce profitability calculator\./);
   assert.match(html, /COD price/);
   assert.match(html, /Order quantity/);
   assert.match(html, /COG per item/);
-  assert.match(html, /Total ad spend/);
+  assert.match(html, /Ad spend/);
   assert.match(html, /COD fee/);
   assert.match(html, /RTS rate/);
-  assert.match(html, /₱40/);
   assert.match(html, /12%/);
-  assert.match(html, /https:\/\/kitakalkula\.example\/og\.png/);
-  assert.doesNotMatch(html, /__SITE_ORIGIN__|RTS CHECKER|FulfilRate/);
+  assert.match(html, /https:\/\/profit-actually\.example\/og\.png/);
+  assert.doesNotMatch(html, /__SITE_ORIGIN__|RTS CHECKER|FulfilRate|KitaKalkula|Item name|QUICK PROFIT CHECK|I-compute ang kita/);
+  const inputOrder = ["cod", "cod-fee", "rts", "cog", "ad-spend", "order-qty"]
+    .map((id) => html.indexOf(`id="${id}"`));
+  assert.deepEqual(inputOrder, [...inputOrder].sort((a, b) => a - b));
+  assert.match(css, /color-scheme:\s*dark/i);
+  assert.match(css, /--paper:\s*#07100d/i);
+  assert.match(app, /outputs\.netIncome\.textContent = money\(result\.netBeforeRts\)/);
+  assert.match(app, /outputs\.netIncludingRts\.textContent = money\(result\.netIncome\)/);
 });
 
 test("calculator follows the corrected workbook formulas", async () => {
@@ -94,7 +106,7 @@ test("calculator handles boundaries without circular or invalid output", async (
 
 test("packages standalone and GitHub Pages quick calculators", async () => {
   const [offline, html, bundle] = await Promise.all([
-    readFile(new URL("../outputs/KITAKALKULA-OFFLINE.html", import.meta.url), "utf8"),
+    readFile(new URL("../outputs/PROFIT-ACTUALLY-OFFLINE.html", import.meta.url), "utf8"),
     readFile(new URL("../outputs/github-pages/index.html", import.meta.url), "utf8"),
     readFile(new URL("../outputs/github-pages/app.bundle.js", import.meta.url), "utf8"),
   ]);

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const title = "KitaKalkula — PH E-commerce Net Income Calculator";
+const title = "Profit, Actually. — Local E-commerce Profit Calculator";
 const description =
-  "Quick net income estimates for Philippine COD e-commerce product runs.";
+  "Your quick local e-commerce profitability calculator.";
 
 export const metadata: Metadata = {
   title,
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title,
     description,
     type: "website",
-    images: [{ url: "/og.png", width: 1664, height: 960, alt: "KitaKalkula net income calculator" }],
+    images: [{ url: "/og.png", width: 1664, height: 960, alt: "Profit, Actually local e-commerce calculator" }],
   },
   twitter: {
     card: "summary_large_image",

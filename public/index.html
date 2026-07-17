@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>KitaKalkula — PH E-commerce Net Income Calculator</title>
+    <title>Profit, Actually. — Local E-commerce Profit Calculator</title>
     <meta
       name="description"
       content="A quick net income calculator for small Philippine e-commerce businesses, based on COD price, RTS rate, product cost, ad spend, and order volume."
     />
-    <meta property="og:title" content="KitaKalkula — I-compute ang kita bago mag-scale" />
-    <meta property="og:description" content="Quick net income estimates for Philippine e-commerce product runs." />
+    <meta property="og:title" content="Profit, Actually. — Are you sure you're profitable?" />
+    <meta property="og:description" content="Your quick local e-commerce profitability calculator." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="__SITE_ORIGIN__/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -19,33 +19,29 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="KitaKalkula home">
-        <span class="brand-mark" aria-hidden="true">K</span>
+      <a class="brand" href="#top" aria-label="Profit, Actually home">
+        <span class="brand-mark" aria-hidden="true">P?</span>
         <span class="brand-copy">
-          <strong>KitaKalkula</strong>
-          <small>PH E-commerce Calculator</small>
+          <strong>Profit, Actually.</strong>
+          <small>Local E-commerce Calculator</small>
         </span>
       </a>
-      <span class="local-pill"><span aria-hidden="true"></span>Private sa device mo</span>
+      <span class="local-pill"><span aria-hidden="true"></span>Private on your device</span>
     </header>
 
     <main id="top">
       <section class="intro">
-        <p class="eyebrow"><span>01</span> QUICK PROFIT CHECK</p>
-        <h1>I-compute ang kita.<br /><em>Bago ka mag-scale.</em></h1>
-        <p class="intro-copy">
-          Isang mabilis na net income estimate para sa COD e-commerce—kasama ang RTS,
-          product cost, ad spend, shipping fee, COD fee, at VAT assumptions mula sa workbook mo.
-        </p>
+        <h1>ARE YOU SURE YOU'RE<br /><span>PROFITABLE?</span></h1>
+        <p class="intro-copy">Your quick local e-commerce profitability calculator.</p>
 
         <nav class="calculator-switch" aria-label="Calculator type">
           <button class="switch-option is-active" type="button" data-view="quick" aria-pressed="true">
             <span class="switch-number">01</span>
-            <span><strong>Quick Calculator</strong><small>Isang product run</small></span>
+            <span><strong>Quick Calculator</strong><small>One product run</small></span>
           </button>
           <button class="switch-option" type="button" data-view="upload" aria-pressed="false">
             <span class="switch-number">02</span>
-            <span><strong>Upload Your Data</strong><small>Susunod na phase</small></span>
+            <span><strong>Upload Your Data</strong><small>Next phase</small></span>
             <b>SOON</b>
           </button>
         </nav>
@@ -56,32 +52,15 @@
           <div class="card-heading">
             <div>
               <span class="section-label">YOUR INPUTS</span>
-              <h2>Mga numero ng product run</h2>
+              <h2>Your product run numbers</h2>
             </div>
-            <button class="text-button" id="sample-button" type="button">Gumamit ng sample</button>
+            <button class="text-button" id="sample-button" type="button">Use sample</button>
           </div>
-
-          <label class="field field-wide">
-            <span>Item name <small>optional</small></span>
-            <input id="item" name="item" type="text" placeholder="Hal. Foldable storage box" autocomplete="off" />
-          </label>
 
           <div class="field-grid">
             <label class="field">
               <span>COD price</span>
               <span class="input-wrap"><b>₱</b><input id="cod" name="cod" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
-            </label>
-            <label class="field">
-              <span>Order quantity</span>
-              <span class="input-wrap"><input id="order-qty" name="orderQty" type="number" min="1" step="1" inputmode="numeric" placeholder="0" required /><b>orders</b></span>
-            </label>
-            <label class="field">
-              <span>COG per item</span>
-              <span class="input-wrap"><b>₱</b><input id="cog" name="cog" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
-            </label>
-            <label class="field">
-              <span>Total ad spend</span>
-              <span class="input-wrap"><b>₱</b><input id="ad-spend" name="adSpend" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
             </label>
             <label class="field">
               <span>COD fee</span>
@@ -91,6 +70,18 @@
               <span>RTS rate</span>
               <span class="input-wrap"><input id="rts" name="rtsPercent" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
             </label>
+            <label class="field">
+              <span>COG per item</span>
+              <span class="input-wrap"><b>₱</b><input id="cog" name="cog" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>Ad spend</span>
+              <span class="input-wrap"><b>₱</b><input id="ad-spend" name="adSpend" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>Order quantity</span>
+              <span class="input-wrap"><input id="order-qty" name="orderQty" type="number" min="1" step="1" inputmode="numeric" placeholder="0" required /><b>orders</b></span>
+            </label>
           </div>
 
           <div class="fixed-assumptions" aria-label="Fixed workbook assumptions">
@@ -99,21 +90,24 @@
           </div>
 
           <div class="form-actions">
-            <p>Live ang result habang nagta-type ka.</p>
-            <button class="reset-button" id="reset-button" type="reset">I-reset lahat</button>
+            <p>Results update as you type.</p>
+            <button class="reset-button" id="reset-button" type="reset">Reset all</button>
           </div>
         </form>
 
         <aside class="result-card is-empty" id="result-card" aria-live="polite">
           <div class="result-topline">
             <span class="section-label">LIVE ESTIMATE</span>
-            <span class="status-chip" id="status-chip">Kumpletuhin ang inputs</span>
+            <span class="status-chip" id="status-chip">Complete all inputs</span>
           </div>
-          <p class="product-name" id="product-name">Your product</p>
           <div class="hero-result">
             <span>Estimated net income</span>
             <strong id="net-income">₱—</strong>
-            <small id="net-caption">Ilagay ang anim na numbers para makita ang estimate.</small>
+            <small id="net-caption">Enter all six numbers to see the estimate.</small>
+            <div class="rts-net-line">
+              <span>Net including cost of goods of RTS inventory</span>
+              <strong id="net-including-rts">₱—</strong>
+            </div>
           </div>
 
           <div class="metric-grid">
@@ -132,14 +126,14 @@
               <div><dt>VAT on ad spend</dt><dd id="vat">− ₱—</dd></div>
               <div><dt>Base shipping fees</dt><dd id="base-sf">− ₱—</dd></div>
               <div><dt>COD fee + 12% VAT</dt><dd id="cod-fee-output">− ₱—</dd></div>
-              <div class="subtotal-row"><dt>Net before RTS recovery</dt><dd id="net-before-rts">₱—</dd></div>
-              <div class="addback-row"><dt>RTS inventory add-back</dt><dd id="rts-addback">+ ₱—</dd></div>
+              <div class="subtotal-row"><dt>Estimated net income</dt><dd id="net-before-rts">₱—</dd></div>
+              <div class="addback-row"><dt>RTS inventory COG</dt><dd id="rts-addback">+ ₱—</dd></div>
             </dl>
           </div>
 
           <p class="formula-note">
-            Final estimate = Net + COG value of returned inventory. Ito ay operational estimate,
-            hindi formal tax o accounting advice.
+            Main estimate follows the workbook's NET formula without the RTS inventory COG add-back.
+            This is an operational estimate, not formal tax or accounting advice.
           </p>
         </aside>
       </section>
@@ -149,20 +143,20 @@
         <p class="eyebrow"><span>02</span> COMING NEXT</p>
         <h2>Upload Your Data Calculator</h2>
         <p>
-          Dito natin ikakabit ang bulk calculator para sa maraming products gamit ang Excel o CSV.
-          Uunahin muna nating i-finalize ang quick calculator at formula behavior.
+          This is where we'll connect the bulk calculator for multiple products using Excel or CSV.
+          The quick calculator and formula behavior come first.
         </p>
         <ul>
           <li>Multiple product rows</li>
           <li>Automatic net income per item</li>
           <li>Summary totals at export-ready results</li>
         </ul>
-        <button class="back-button" type="button" data-view="quick">Bumalik sa Quick Calculator</button>
+        <button class="back-button" type="button" data-view="quick">Back to Quick Calculator</button>
       </section>
     </main>
 
     <footer>
-      <div><strong>KitaKalkula</strong><span>Built for small PH e-commerce teams.</span></div>
+      <div><strong>Profit, Actually.</strong><span>Built for small local e-commerce teams.</span></div>
       <p>Formula based on <strong>calculator sample file.xlsx</strong></p>
     </footer>
   </body>

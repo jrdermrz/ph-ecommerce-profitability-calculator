@@ -63,7 +63,7 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
-    return new Response("KitaKalkula is temporarily unavailable. Please refresh.", {
+    return new Response("Profit, Actually. is temporarily unavailable. Please refresh.", {
       status: 503,
       headers: {
         "Cache-Control": "no-store",

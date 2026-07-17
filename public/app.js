@@ -63,20 +63,19 @@
 
   const form = document.getElementById("calculator-form");
   const inputs = {
-    item: document.getElementById("item"),
     cod: document.getElementById("cod"),
-    orderQty: document.getElementById("order-qty"),
-    cog: document.getElementById("cog"),
-    adSpend: document.getElementById("ad-spend"),
     codFeePercent: document.getElementById("cod-fee"),
     rtsPercent: document.getElementById("rts"),
+    cog: document.getElementById("cog"),
+    adSpend: document.getElementById("ad-spend"),
+    orderQty: document.getElementById("order-qty"),
   };
 
   const outputs = {
     resultCard: document.getElementById("result-card"),
     statusChip: document.getElementById("status-chip"),
-    productName: document.getElementById("product-name"),
     netIncome: document.getElementById("net-income"),
+    netIncludingRts: document.getElementById("net-including-rts"),
     netCaption: document.getElementById("net-caption"),
     roas: document.getElementById("roas"),
     cpp: document.getElementById("cpp"),
@@ -138,10 +137,10 @@
   function renderEmpty() {
     outputs.resultCard.classList.remove("is-positive", "is-negative");
     outputs.resultCard.classList.add("is-empty");
-    outputs.statusChip.textContent = "Kumpletuhin ang inputs";
-    outputs.productName.textContent = inputs.item.value.trim() || "Your product";
+    outputs.statusChip.textContent = "Complete all inputs";
     outputs.netIncome.textContent = "₱—";
-    outputs.netCaption.textContent = "Ilagay ang anim na numbers para makita ang estimate.";
+    outputs.netIncludingRts.textContent = "₱—";
+    outputs.netCaption.textContent = "Enter all six numbers to see the estimate.";
     outputs.roas.textContent = "—";
     outputs.cpp.textContent = "₱—";
     outputs.deliveredOrders.textContent = "—";
@@ -157,21 +156,21 @@
   }
 
   function render() {
-    outputs.productName.textContent = inputs.item.value.trim() || "Your product";
     if (!hasCompleteInputs()) {
       renderEmpty();
       return;
     }
 
     const result = computeNetIncome(readInputs());
-    const isPositive = result.netIncome >= 0;
+    const isPositive = result.netBeforeRts >= 0;
     outputs.resultCard.classList.remove("is-empty", "is-positive", "is-negative");
     outputs.resultCard.classList.add(isPositive ? "is-positive" : "is-negative");
     outputs.statusChip.textContent = isPositive ? "Positive estimate" : "Possible loss";
-    outputs.netIncome.textContent = money(result.netIncome);
+    outputs.netIncome.textContent = money(result.netBeforeRts);
+    outputs.netIncludingRts.textContent = money(result.netIncome);
     outputs.netCaption.textContent = isPositive
-      ? "Estimated na matitira matapos ang listed costs at RTS inventory recovery."
-      : "Mas mataas ang estimated costs kaysa sa receivable para sa inputs na ito.";
+      ? "Estimated remainder after the listed costs, before the RTS inventory COG add-back."
+      : "Estimated costs are higher than receivables for these inputs.";
     outputs.roas.textContent = result.roas === null ? "—" : `${ratio.format(result.roas)}×`;
     outputs.cpp.textContent = result.cpp === null ? "₱—" : money(result.cpp);
     outputs.deliveredOrders.textContent = integer.format(result.deliveredOrders);
@@ -205,7 +204,6 @@
   }
 
   document.getElementById("sample-button").addEventListener("click", () => {
-    inputs.item.value = "Best-selling organizer";
     inputs.cod.value = "899";
     inputs.orderQty.value = "100";
     inputs.cog.value = "210";
