@@ -901,37 +901,6 @@ input::-webkit-inner-spin-button {
 
 .column-note strong { color: #b7c6bf; }
 
-.sync-rules-step {
-  padding-bottom: 2px;
-}
-
-.sync-fixed-rules {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.sync-fixed-rules p {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 12px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px 3px 10px 3px;
-  background: rgba(56, 215, 161, 0.06);
-}
-
-.sync-fixed-rules strong {
-  color: var(--green-bright);
-  font-size: 15px;
-}
-
-.sync-fixed-rules span {
-  color: var(--muted);
-  font-size: 8px;
-  font-weight: 750;
-}
-
 .sync-summary {
   position: sticky;
   top: 18px;
@@ -1199,7 +1168,6 @@ input:focus-visible {
     flex-direction: column;
   }
 
-  .sync-fixed-rules,
   .sync-totals {
     grid-template-columns: 1fr;
   }
@@ -1379,28 +1347,11 @@ input:focus-visible {
         <div class="sync-workspace">
           <form class="sync-input-card" id="data-sync-form" novalidate>
             <div class="sync-step">
-              <div class="sync-step-heading"><span>01</span><div><strong>Product master database</strong><small>Latest record per Item Name is used</small></div></div>
-              <input id="product-db-file" type="file" accept=".xlsx,.xls,.csv" hidden />
-              <label class="file-button" for="product-db-file">Upload RTS + COG master</label>
-              <p class="file-status" id="product-db-status">Loading shared product records…</p>
-              <p class="column-note">Required columns: <strong>Effective Date, Item Name, RTS Rate, COG</strong></p>
-            </div>
-
-            <div class="sync-step">
-              <div class="sync-step-heading"><span>02</span><div><strong>Daily performance data</strong><small>Excel or CSV based on your daily sheet</small></div></div>
+              <div class="sync-step-heading"><span>01</span><div><strong>Daily performance data</strong><small>Excel or CSV based on your daily sheet</small></div></div>
               <input id="daily-data-file" type="file" accept=".xlsx,.xls,.csv" hidden />
-              <label class="file-button secondary" for="daily-data-file">Upload daily data</label>
+              <label class="file-button" for="daily-data-file">Upload daily data</label>
               <p class="file-status" id="daily-data-status">No daily file selected.</p>
               <p class="column-note">Required columns: <strong>Page Name, Item Name, COD, Adspent, Orders</strong></p>
-            </div>
-
-            <div class="sync-step sync-rules-step">
-              <div class="sync-step-heading"><span>03</span><div><strong>Fixed calculation rules</strong><small>Automatically applied to every uploaded row</small></div></div>
-              <div class="sync-fixed-rules" aria-label="Fixed Data Sync calculation rules">
-                <p><strong>1%</strong><span>COD fee</span></p>
-                <p><strong>₱37.50</strong><span>Shipping per order</span></p>
-                <p><strong>12%</strong><span>VAT</span></p>
-              </div>
             </div>
           </form>
 
@@ -1409,7 +1360,7 @@ input:focus-visible {
             <div class="sync-main-net">
               <span>Projected net without RTS</span>
               <strong id="sync-net-without-rts">₱—</strong>
-              <small id="sync-caption">Upload the product master and daily performance data.</small>
+              <small id="sync-caption">Upload the daily performance data to begin.</small>
             </div>
             <div class="sync-secondary-net"><span>Projected net with RTS</span><strong id="sync-net-with-rts">₱—</strong></div>
             <div class="net-ratio-card"><span>Net Ratio</span><strong id="sync-net-ratio">1:—</strong><small>Projected net without RTS ÷ ad spend</small></div>
