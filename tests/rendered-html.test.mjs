@@ -25,7 +25,7 @@ test("server-renders the quick calculator and the next upload option", async () 
   ]);
   assert.match(html, /<title>PH E-commerce Profitability Calculator<\/title>/i);
   assert.match(html, /Quick Calculator/);
-  assert.match(html, /Upload Your Data/);
+  assert.match(html, /Data Sync Calculator/);
   assert.match(html, /ARE YOU SURE YOU'RE/);
   assert.match(html, /PROFITABLE\?/);
   assert.match(html, /Your quick local e-commerce profitability calculator\./);
@@ -35,10 +35,15 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(html, /Ad spend/);
   assert.match(html, /COD fee/);
   assert.match(html, /RTS rate/);
+  assert.match(html, /Shipping fee per order/);
   assert.match(html, /12%/);
+  assert.match(html, /Projected net without RTS/);
+  assert.match(html, /Projected net with RTS/);
+  assert.match(html, /Net Ratio/);
+  assert.match(html, /NET PER PAGE/);
   assert.match(html, /https:\/\/ph-ecommerce-profitability-calculator\.example\/og\.png/);
   assert.doesNotMatch(html, /__SITE_ORIGIN__|RTS CHECKER|FulfilRate|KitaKalkula|Item name|QUICK PROFIT CHECK|I-compute ang kita/);
-  const inputOrder = ["cod", "cod-fee", "rts", "cog", "ad-spend", "order-qty"]
+  const inputOrder = ["cod", "cod-fee", "rts", "cog", "ad-spend", "order-qty", "shipping-fee"]
     .map((id) => html.indexOf(`id="${id}"`));
   assert.deepEqual(inputOrder, [...inputOrder].sort((a, b) => a - b));
   assert.match(css, /color-scheme:\s*dark/i);
@@ -51,7 +56,7 @@ test("calculator follows the corrected workbook formulas", async () => {
   const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   const sandbox = { window: {} };
   runInNewContext(source, sandbox);
-  const { computeNetIncome, BASE_SHIPPING_FEE, VAT_RATE } = sandbox.window.NetIncomeCalculator;
+  const { computeNetIncome, VAT_RATE } = sandbox.window.NetIncomeCalculator;
 
   const result = computeNetIncome({
     cod: 1000,
@@ -60,9 +65,9 @@ test("calculator follows the corrected workbook formulas", async () => {
     cog: 200,
     adSpend: 10000,
     orderQty: 100,
+    shippingFee: 40,
   });
 
-  assert.equal(BASE_SHIPPING_FEE, 40);
   assert.equal(VAT_RATE, 0.12);
   assert.equal(result.deliveredOrders, 80);
   assert.equal(result.rtsOrders, 20);
@@ -72,6 +77,7 @@ test("calculator follows the corrected workbook formulas", async () => {
   assert.equal(result.vat, 1200);
   assert.equal(result.totalCog, 20000);
   assert.equal(result.baseShippingFees, 4000);
+  assert.equal(result.shippingFee, 40);
   assert.ok(Math.abs(result.codFee - 2688) < 1e-9);
   assert.ok(Math.abs(result.netBeforeRts - 42112) < 1e-9);
   assert.equal(result.rtsInventoryAddBack, 4000);
@@ -91,6 +97,7 @@ test("calculator handles boundaries without circular or invalid output", async (
     cog: 100,
     adSpend: 0,
     orderQty: 10.9,
+    shippingFee: -20,
   });
 
   assert.equal(result.orderQty, 10);
@@ -100,8 +107,35 @@ test("calculator handles boundaries without circular or invalid output", async (
   assert.equal(result.rtsOrders, 10);
   assert.equal(result.roas, null);
   assert.equal(result.cpp, 0);
+  assert.equal(result.shippingFee, 0);
   assert.ok(Number.isFinite(result.netIncome));
   assert.doesNotMatch(source, /adSpend\s*\/\s*cpp|cpp\s*\/\s*cpp/i);
+});
+
+test("data sync matches the latest product record and calculates Net Ratio per page", async () => {
+  const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const sandbox = { window: {} };
+  runInNewContext(source, sandbox);
+  const { parseProductRows, parseDailyRows, calculateDataSync } = sandbox.window.DataSyncCalculator;
+
+  const products = parseProductRows([
+    { "Effective Date": "2026-01-01", "Item Name": "Gold Utensils", "RTS Rate": "25%", COG: "₱180" },
+    { "Effective Date": "2026-07-17", "Item Name": "GOLD UTENSILS", "RTS Rate": "20%", COG: "₱200" },
+  ]);
+  const daily = parseDailyRows([
+    { "Page Name": "Luxe Kitchenware", "Item Name": "Gold Utensils", COD: "₱1,000", ADSPENT: "₱10,000", Orders: 100 },
+  ]);
+  const result = calculateDataSync(daily, products, { codFeePercent: 3, shippingFee: 40 });
+
+  assert.equal(products.length, 2);
+  assert.equal(daily.length, 1);
+  assert.equal(result.unmatchedItems.length, 0);
+  assert.equal(result.matchedItems, 1);
+  assert.ok(Math.abs(result.netWithoutRts - 42112) < 1e-9);
+  assert.ok(Math.abs(result.netWithRts - 46112) < 1e-9);
+  assert.ok(Math.abs(result.netRatio - 4.2112) < 1e-9);
+  assert.equal(result.pages[0].pageName, "Luxe Kitchenware");
+  assert.ok(Math.abs(result.pages[0].netRatio - 4.2112) < 1e-9);
 });
 
 test("packages standalone and GitHub Pages quick calculators", async () => {
@@ -124,4 +158,6 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   await access(new URL("../public/og.png", import.meta.url));
   await access(new URL("../outputs/github-pages/og.png", import.meta.url));
   await access(new URL("../outputs/github-pages/.nojekyll", import.meta.url));
+  await access(new URL("../outputs/github-pages/vendor/xlsx.full.min.js", import.meta.url));
+  await access(new URL("../outputs/github-pages/data/product-master.json", import.meta.url));
 });

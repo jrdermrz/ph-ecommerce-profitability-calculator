@@ -13,11 +13,20 @@ const readPublic = (path) => readFile(resolve(publicRoot, path), "utf8");
 const safeInlineScript = (source) => source.replaceAll(/<\/script/gi, "<\\/script");
 
 let html = await readPublic("index.html");
-const [css, app] = await Promise.all([readPublic("app.css"), readPublic("app.js")]);
+const [css, app, xlsx, productMaster] = await Promise.all([
+  readPublic("app.css"),
+  readPublic("app.js"),
+  readPublic("vendor/xlsx.full.min.js"),
+  readPublic("data/product-master.json"),
+]);
 
 html = html
   .replaceAll("__SITE_ORIGIN__", ".")
   .replace('<link rel="stylesheet" href="./app.css" />', `<style>${css}</style>`)
+  .replace(
+    /\s*<script src="\.\/vendor\/xlsx\.full\.min\.js" defer><\/script>/,
+    `<script>${safeInlineScript(xlsx)}</script>\n<script>window.__PRODUCT_MASTER__=${productMaster};</script>`,
+  )
   .replace(/\s*<script src="\.\/app\.js" defer><\/script>/, "")
   .replace("</body>", `<script>${safeInlineScript(app)}</script>\n</body>`);
 

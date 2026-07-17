@@ -20,9 +20,21 @@ html = html
 
 await mkdir(outputRoot, { recursive: true });
 await Promise.all([
+  mkdir(resolve(outputRoot, "vendor"), { recursive: true }),
+  mkdir(resolve(outputRoot, "data"), { recursive: true }),
+]);
+await Promise.all([
   writeFile(resolve(outputRoot, "index.html"), html, "utf8"),
   writeFile(resolve(outputRoot, "app.bundle.js"), app, "utf8"),
   writeFile(resolve(outputRoot, ".nojekyll"), "", "utf8"),
   copyFile(resolve(publicRoot, "og.png"), resolve(outputRoot, "og.png")),
+  copyFile(
+    resolve(publicRoot, "vendor", "xlsx.full.min.js"),
+    resolve(outputRoot, "vendor", "xlsx.full.min.js"),
+  ),
+  copyFile(
+    resolve(publicRoot, "data", "product-master.json"),
+    resolve(outputRoot, "data", "product-master.json"),
+  ),
 ]);
 console.log(outputRoot);

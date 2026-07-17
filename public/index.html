@@ -15,6 +15,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="__SITE_ORIGIN__/og.png" />
     <link rel="stylesheet" href="./app.css" />
+    <script src="./vendor/xlsx.full.min.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
@@ -41,8 +42,8 @@
           </button>
           <button class="switch-option" type="button" data-view="upload" aria-pressed="false">
             <span class="switch-number">02</span>
-            <span><strong>Upload Your Data</strong><small>Next phase</small></span>
-            <b>SOON</b>
+            <span><strong>Data Sync Calculator</strong><small>Daily performance file</small></span>
+            <b>NEW</b>
           </button>
         </nav>
       </section>
@@ -82,10 +83,13 @@
               <span>Order quantity</span>
               <span class="input-wrap"><input id="order-qty" name="orderQty" type="number" min="1" step="1" inputmode="numeric" placeholder="0" required /><b>orders</b></span>
             </label>
+            <label class="field">
+              <span>Shipping fee per order</span>
+              <span class="input-wrap"><b>₱</b><input id="shipping-fee" name="shippingFee" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
           </div>
 
-          <div class="fixed-assumptions" aria-label="Fixed workbook assumptions">
-            <p><span>₱40</span> base shipping fee / order</p>
+          <div class="fixed-assumptions single-assumption" aria-label="Fixed workbook assumptions">
             <p><span>12%</span> VAT used by the workbook</p>
           </div>
 
@@ -103,7 +107,7 @@
           <div class="hero-result">
             <span>Estimated net income</span>
             <strong id="net-income">₱—</strong>
-            <small id="net-caption">Enter all six numbers to see the estimate.</small>
+            <small id="net-caption">Enter all seven numbers to see the estimate.</small>
             <div class="rts-net-line">
               <span>Net including cost of goods of RTS inventory</span>
               <strong id="net-including-rts">₱—</strong>
@@ -124,7 +128,7 @@
               <div><dt>Total COG</dt><dd id="total-cog">− ₱—</dd></div>
               <div><dt>Ad spend</dt><dd id="ad-spend-output">− ₱—</dd></div>
               <div><dt>VAT on ad spend</dt><dd id="vat">− ₱—</dd></div>
-              <div><dt>Base shipping fees</dt><dd id="base-sf">− ₱—</dd></div>
+              <div><dt>Shipping fees</dt><dd id="base-sf">− ₱—</dd></div>
               <div><dt>COD fee + 12% VAT</dt><dd id="cod-fee-output">− ₱—</dd></div>
               <div class="subtotal-row"><dt>Estimated net income</dt><dd id="net-before-rts">₱—</dd></div>
               <div class="addback-row"><dt>RTS inventory COG</dt><dd id="rts-addback">+ ₱—</dd></div>
@@ -138,20 +142,81 @@
         </aside>
       </section>
 
-      <section class="upload-placeholder" id="upload-panel" data-panel="upload" hidden>
-        <div class="coming-icon" aria-hidden="true"><span></span><span></span><span></span></div>
-        <p class="eyebrow"><span>02</span> COMING NEXT</p>
-        <h2>Upload Your Data Calculator</h2>
-        <p>
-          This is where we'll connect the bulk calculator for multiple products using Excel or CSV.
-          The quick calculator and formula behavior come first.
-        </p>
-        <ul>
-          <li>Multiple product rows</li>
-          <li>Automatic net income per item</li>
-          <li>Summary totals at export-ready results</li>
-        </ul>
-        <button class="back-button" type="button" data-view="quick">Back to Quick Calculator</button>
+      <section class="data-sync-panel" id="upload-panel" data-panel="upload" hidden>
+        <div class="sync-heading">
+          <div>
+            <p class="eyebrow"><span>02</span> DAILY DATA WORKFLOW</p>
+            <h2>Data Sync Calculator</h2>
+            <p>Match daily page performance with the latest RTS rate and cost of goods for every Item Name.</p>
+          </div>
+          <button class="back-button" type="button" data-view="quick">Back to Quick Calculator</button>
+        </div>
+
+        <div class="sync-workspace">
+          <form class="sync-input-card" id="data-sync-form" novalidate>
+            <div class="sync-step">
+              <div class="sync-step-heading"><span>01</span><div><strong>Product master database</strong><small>Latest record per Item Name is used</small></div></div>
+              <input id="product-db-file" type="file" accept=".xlsx,.xls,.csv" hidden />
+              <label class="file-button" for="product-db-file">Upload RTS + COG master</label>
+              <p class="file-status" id="product-db-status">Loading shared product records…</p>
+              <p class="column-note">Required columns: <strong>Effective Date, Item Name, RTS Rate, COG</strong></p>
+            </div>
+
+            <div class="sync-step">
+              <div class="sync-step-heading"><span>02</span><div><strong>Daily performance data</strong><small>Excel or CSV based on your daily sheet</small></div></div>
+              <input id="daily-data-file" type="file" accept=".xlsx,.xls,.csv" hidden />
+              <label class="file-button secondary" for="daily-data-file">Upload daily data</label>
+              <p class="file-status" id="daily-data-status">No daily file selected.</p>
+              <p class="column-note">Required columns: <strong>Page Name, Item Name, COD, Adspent, Orders</strong></p>
+            </div>
+
+            <div class="sync-step">
+              <div class="sync-step-heading"><span>03</span><div><strong>Calculation settings</strong><small>Applied to every uploaded row</small></div></div>
+              <div class="sync-settings-grid">
+                <label class="field">
+                  <span>COD fee</span>
+                  <span class="input-wrap"><input id="sync-cod-fee" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
+                </label>
+                <label class="field">
+                  <span>Shipping fee per order</span>
+                  <span class="input-wrap"><b>₱</b><input id="sync-shipping-fee" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+                </label>
+              </div>
+              <div class="fixed-assumptions single-assumption"><p><span>12%</span> VAT used by the workbook</p></div>
+            </div>
+          </form>
+
+          <aside class="sync-summary is-empty" id="sync-summary" aria-live="polite">
+            <div class="result-topline"><span class="section-label">PROJECTED RESULT</span><span class="status-chip" id="sync-status">Complete the data setup</span></div>
+            <div class="sync-main-net">
+              <span>Projected net without RTS</span>
+              <strong id="sync-net-without-rts">₱—</strong>
+              <small id="sync-caption">Upload both data sources and complete the settings.</small>
+            </div>
+            <div class="sync-secondary-net"><span>Projected net with RTS</span><strong id="sync-net-with-rts">₱—</strong></div>
+            <div class="net-ratio-card"><span>Net Ratio</span><strong id="sync-net-ratio">1:—</strong><small>Projected net without RTS ÷ ad spend</small></div>
+            <dl class="sync-totals">
+              <div><dt>Total ad spend</dt><dd id="sync-total-ad-spend">₱—</dd></div>
+              <div><dt>Total orders</dt><dd id="sync-total-orders">—</dd></div>
+              <div><dt>Matched items</dt><dd id="sync-matched-items">—</dd></div>
+            </dl>
+          </aside>
+        </div>
+
+        <section class="unmatched-card" id="unmatched-card" hidden>
+          <div><strong>Items missing from the product database</strong><small>Add an RTS rate and COG record using the exact Item Name.</small></div>
+          <ul id="unmatched-list"></ul>
+        </section>
+
+        <section class="page-net-section" id="page-net-section" hidden>
+          <div class="page-net-heading"><div><span class="section-label">NET PER PAGE</span><h3>Projected profitability by page</h3></div><p id="page-net-count"></p></div>
+          <div class="page-net-table-wrap">
+            <table class="page-net-table">
+              <thead><tr><th>Page name</th><th>Orders</th><th>Ad spend</th><th>Net without RTS</th><th>Net with RTS</th><th>Net Ratio</th></tr></thead>
+              <tbody id="page-net-body"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </main>
 
