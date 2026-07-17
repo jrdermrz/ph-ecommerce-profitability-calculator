@@ -8,7 +8,7 @@ async function render() {
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
-  return worker.fetch(new Request("https://profit-actually.example/"), {
+  return worker.fetch(new Request("https://ph-ecommerce-profitability-calculator.example/"), {
     ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
   });
 }
@@ -23,7 +23,7 @@ test("server-renders the quick calculator and the next upload option", async () 
     readFile(new URL("../public/app.css", import.meta.url), "utf8"),
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
   ]);
-  assert.match(html, /<title>Profit, Actually\./i);
+  assert.match(html, /<title>PH E-commerce Profitability Calculator<\/title>/i);
   assert.match(html, /Quick Calculator/);
   assert.match(html, /Upload Your Data/);
   assert.match(html, /ARE YOU SURE YOU'RE/);
@@ -36,7 +36,7 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(html, /COD fee/);
   assert.match(html, /RTS rate/);
   assert.match(html, /12%/);
-  assert.match(html, /https:\/\/profit-actually\.example\/og\.png/);
+  assert.match(html, /https:\/\/ph-ecommerce-profitability-calculator\.example\/og\.png/);
   assert.doesNotMatch(html, /__SITE_ORIGIN__|RTS CHECKER|FulfilRate|KitaKalkula|Item name|QUICK PROFIT CHECK|I-compute ang kita/);
   const inputOrder = ["cod", "cod-fee", "rts", "cog", "ad-spend", "order-qty"]
     .map((id) => html.indexOf(`id="${id}"`));
@@ -106,7 +106,10 @@ test("calculator handles boundaries without circular or invalid output", async (
 
 test("packages standalone and GitHub Pages quick calculators", async () => {
   const [offline, html, bundle] = await Promise.all([
-    readFile(new URL("../outputs/PROFIT-ACTUALLY-OFFLINE.html", import.meta.url), "utf8"),
+    readFile(
+      new URL("../outputs/PH-ECOMMERCE-PROFITABILITY-CALCULATOR-OFFLINE.html", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../outputs/github-pages/index.html", import.meta.url), "utf8"),
     readFile(new URL("../outputs/github-pages/app.bundle.js", import.meta.url), "utf8"),
   ]);
@@ -119,4 +122,6 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);
   await access(new URL("../public/og.png", import.meta.url));
+  await access(new URL("../outputs/github-pages/og.png", import.meta.url));
+  await access(new URL("../outputs/github-pages/.nojekyll", import.meta.url));
 });

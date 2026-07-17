@@ -1,8 +1,6 @@
-# vinext-starter
+# PH E-commerce Profitability Calculator
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+A quick profitability calculator for Philippine e-commerce businesses. It estimates net income from COD price, COD fee, RTS rate, cost of goods, ad spend, and order quantity using the supplied workbook logic.
 
 ## Prerequisites
 

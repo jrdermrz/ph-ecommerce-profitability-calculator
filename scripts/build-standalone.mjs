@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = resolve(projectRoot, "public");
-const outputPath = resolve(projectRoot, "outputs", "PROFIT-ACTUALLY-OFFLINE.html");
+const outputPath = resolve(
+  projectRoot,
+  "outputs",
+  "PH-ECOMMERCE-PROFITABILITY-CALCULATOR-OFFLINE.html",
+);
 const readPublic = (path) => readFile(resolve(publicRoot, path), "utf8");
 const safeInlineScript = (source) => source.replaceAll(/<\/script/gi, "<\\/script");
 

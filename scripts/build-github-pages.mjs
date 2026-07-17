@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,5 +22,7 @@ await mkdir(outputRoot, { recursive: true });
 await Promise.all([
   writeFile(resolve(outputRoot, "index.html"), html, "utf8"),
   writeFile(resolve(outputRoot, "app.bundle.js"), app, "utf8"),
+  writeFile(resolve(outputRoot, ".nojekyll"), "", "utf8"),
+  copyFile(resolve(publicRoot, "og.png"), resolve(outputRoot, "og.png")),
 ]);
 console.log(outputRoot);
