@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="fil">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PH E-commerce Profitability Calculator</title>
+    <meta
+      name="description"
+      content="A quick net income calculator for small Philippine e-commerce businesses, based on COD price, RTS rate, product cost, ad spend, and order volume."
+    />
+    <meta property="og:title" content="PH E-commerce Profitability Calculator" />
+    <meta property="og:description" content="Your quick local e-commerce profitability calculator." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="./og.png" />
+    <style>:root {
+  --ink: #eef7f2;
+  --muted: #91a29a;
+  --paper: #07100d;
+  --surface: #0d1814;
+  --surface-strong: #111f1a;
+  --line: #26362f;
+  --green: #38d7a1;
+  --green-bright: #68e5b9;
+  --green-soft: rgba(56, 215, 161, 0.14);
+  --orange: #ff7a45;
+  --orange-soft: rgba(255, 122, 69, 0.12);
+  --red: #ff6b6b;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 6%, rgba(255, 122, 69, 0.11), transparent 22rem),
+    radial-gradient(circle at 92% 18%, rgba(56, 215, 161, 0.1), transparent 28rem),
+    var(--paper);
+  color: var(--ink);
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.site-header {
+  width: min(calc(100% - 40px), 1240px);
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px 4px 13px 4px;
+  background: var(--green);
+  color: #07100d;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 900;
+  transform: rotate(-2deg);
+}
+
+.brand-copy {
+  display: grid;
+  line-height: 1.05;
+}
+
+.brand-copy strong {
+  font-size: 18px;
+  letter-spacing: -0.045em;
+}
+
+.brand-copy small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.local-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #285446;
+  border-radius: 999px;
+  background: rgba(16, 38, 30, 0.78);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.local-pill span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green-bright);
+  box-shadow: 0 0 0 4px rgba(24, 169, 121, 0.12);
+}
+
+.intro {
+  width: min(calc(100% - 40px), 960px);
+  margin: 0 auto;
+  padding: clamp(64px, 9vw, 112px) 0 36px;
+  text-align: center;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 0;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+
+.eyebrow span {
+  padding: 4px 6px;
+  border-radius: 4px 2px 4px 2px;
+  background: var(--ink);
+  color: white;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0;
+}
+
+.intro h1 {
+  margin: 21px 0 22px;
+  font-size: clamp(46px, 7.5vw, 86px);
+  line-height: 0.91;
+  letter-spacing: -0.075em;
+}
+
+.intro h1 span {
+  color: var(--orange);
+}
+
+.intro-copy {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: clamp(15px, 2vw, 18px);
+  line-height: 1.7;
+}
+
+.calculator-switch {
+  width: min(100%, 720px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 42px auto 0;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 18px 6px 18px 6px;
+  background: rgba(13, 24, 20, 0.78);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.2);
+}
+
+.switch-option {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 13px 4px 13px 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.switch-option:hover {
+  color: var(--ink);
+}
+
+.switch-option.is-active {
+  background: var(--green);
+  color: #07100d;
+  box-shadow: 0 10px 24px rgba(56, 215, 161, 0.16);
+}
+
+.switch-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.switch-option > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.switch-option strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.switch-option small {
+  color: currentColor;
+  font-size: 10px;
+  opacity: 0.68;
+}
+
+.switch-option b {
+  padding: 5px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 8px;
+  letter-spacing: 0.09em;
+  opacity: 0.66;
+}
+
+.calculator-shell {
+  width: min(calc(100% - 40px), 1240px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(390px, 0.95fr);
+  align-items: start;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 18px 0 clamp(72px, 9vw, 112px);
+}
+
+.input-card,
+.result-card,
+.upload-placeholder {
+  border: 1px solid var(--line);
+  background: rgba(13, 24, 20, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.input-card {
+  padding: clamp(24px, 4vw, 38px);
+  border-radius: 26px 8px 26px 8px;
+}
+
+.card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.section-label {
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.card-heading h2 {
+  margin: 7px 0 0;
+  font-size: clamp(25px, 3vw, 34px);
+  letter-spacing: -0.045em;
+}
+
+.text-button,
+.reset-button,
+.back-button {
+  border: 0;
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.text-button {
+  padding: 9px 0;
+  background: transparent;
+  color: var(--orange);
+  font-size: 11px;
+  text-decoration: underline;
+  text-decoration-color: rgba(240, 104, 53, 0.35);
+  text-underline-offset: 4px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field > span:first-child {
+  color: #c3d0ca;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+}
+
+.field > span small {
+  color: #9a9f9b;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.field input {
+  width: 100%;
+  height: 51px;
+  border: 1px solid #34463e;
+  border-radius: 11px 4px 11px 4px;
+  outline: 0;
+  background: var(--surface-strong);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field-wide input {
+  padding: 0 15px;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid #34463e;
+  border-radius: 11px 4px 11px 4px;
+  background: var(--surface-strong);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.input-wrap:focus-within,
+.field-wide input:focus {
+  border-color: var(--green-bright);
+  box-shadow: 0 0 0 4px rgba(24, 169, 121, 0.1);
+}
+
+.input-wrap input {
+  min-width: 0;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.input-wrap b {
+  flex: 0 0 auto;
+  padding: 0 12px;
+  color: #819088;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+input::placeholder {
+  color: #5f7068;
+  font-weight: 550;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.fixed-assumptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 13px;
+  border: 1px dashed #34463e;
+  border-radius: 13px 4px 13px 4px;
+  background: #0a1511;
+}
+
+.fixed-assumptions p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.fixed-assumptions span {
+  display: inline-block;
+  margin-right: 3px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.form-actions p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.reset-button {
+  padding: 10px 13px;
+  border-radius: 9px 3px 9px 3px;
+  background: var(--green);
+  color: #07100d;
+  font-size: 10px;
+}
+
+.result-card {
+  position: sticky;
+  top: 18px;
+  overflow: hidden;
+  padding: clamp(24px, 4vw, 38px);
+  border-radius: 8px 26px 8px 26px;
+  background:
+    linear-gradient(160deg, rgba(17, 31, 26, 0.99), rgba(9, 20, 16, 0.99)),
+    var(--surface-strong);
+}
+
+.result-card::before {
+  content: "";
+  position: absolute;
+  top: -110px;
+  right: -100px;
+  width: 270px;
+  height: 270px;
+  border: 44px solid rgba(24, 169, 121, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.result-card.is-negative::before {
+  border-color: rgba(189, 61, 61, 0.08);
+}
+
+.result-topline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-chip {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #1a2923;
+  color: #96a69e;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.is-positive .status-chip {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.is-negative .status-chip {
+  background: rgba(255, 107, 107, 0.14);
+  color: var(--red);
+}
+
+.hero-result {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  margin-top: 13px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hero-result > span {
+  color: #5c6863;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.hero-result > strong {
+  color: var(--green);
+  font-size: clamp(44px, 6vw, 70px);
+  line-height: 1;
+  letter-spacing: -0.075em;
+  font-variant-numeric: tabular-nums;
+}
+
+.is-negative .hero-result > strong {
+  color: var(--red);
+}
+
+.is-empty .hero-result > strong {
+  color: #5f7068;
+}
+
+.hero-result small {
+  min-height: 16px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.rts-net-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 13px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px 3px 10px 3px;
+  background: rgba(56, 215, 161, 0.07);
+}
+
+.rts-net-line span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.rts-net-line strong {
+  flex: 0 0 auto;
+  color: var(--green-bright);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 18px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 12px 4px 12px 4px;
+  background: #0a1511;
+}
+
+.metric-grid div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 13px 10px;
+  text-align: center;
+}
+
+.metric-grid div + div {
+  border-left: 1px solid var(--line);
+}
+
+.metric-grid span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.metric-grid strong {
+  overflow: hidden;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.rts-metric strong {
+  color: var(--orange);
+}
+
+.breakdown {
+  margin-top: 25px;
+}
+
+.breakdown-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.breakdown-heading h3 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: -0.025em;
+}
+
+.breakdown-heading span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.breakdown dl {
+  display: grid;
+  gap: 0;
+  margin: 12px 0 0;
+}
+
+.breakdown dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 31px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.breakdown dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown .subtotal-row {
+  min-height: 38px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.breakdown .addback-row {
+  color: var(--green);
+  font-weight: 800;
+}
+
+.breakdown .addback-row dd {
+  color: var(--green);
+}
+
+.formula-note {
+  margin: 18px 0 0;
+  padding: 13px 14px;
+  border-left: 3px solid var(--orange);
+  background: var(--orange-soft);
+  color: #d7aa96;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.upload-placeholder {
+  width: min(calc(100% - 40px), 820px);
+  margin: 18px auto clamp(72px, 9vw, 112px);
+  padding: clamp(42px, 7vw, 78px);
+  border-radius: 26px 8px 26px 8px;
+  text-align: center;
+}
+
+.coming-icon {
+  width: 82px;
+  height: 82px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto 24px;
+  padding: 19px;
+  border-radius: 23px 7px 23px 7px;
+  background: var(--ink);
+  transform: rotate(-2deg);
+}
+
+.coming-icon span {
+  width: 10px;
+  border-radius: 3px 3px 0 0;
+  background: var(--green-bright);
+}
+
+.coming-icon span:nth-child(1) { height: 23px; }
+.coming-icon span:nth-child(2) { height: 39px; background: #f2c75c; }
+.coming-icon span:nth-child(3) { height: 31px; background: var(--orange); }
+
+.upload-placeholder h2 {
+  margin: 18px 0 14px;
+  font-size: clamp(33px, 5vw, 52px);
+  letter-spacing: -0.055em;
+}
+
+.upload-placeholder > p:not(.eyebrow) {
+  width: min(100%, 600px);
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.upload-placeholder ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 27px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.upload-placeholder li {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0a1511;
+  color: #a9b8b1;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.back-button {
+  min-height: 50px;
+  margin-top: 28px;
+  padding: 0 20px;
+  border-radius: 12px 4px 12px 4px;
+  background: var(--green);
+  color: white;
+  font-size: 11px;
+}
+
+footer {
+  width: min(calc(100% - 40px), 1240px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 28px 0 34px;
+  border-top: 1px solid var(--line);
+}
+
+footer div {
+  display: grid;
+  gap: 4px;
+}
+
+footer strong {
+  font-size: 13px;
+}
+
+footer span,
+footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(24, 169, 121, 0.25);
+  outline-offset: 3px;
+}
+
+@media (max-width: 940px) {
+  .calculator-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .result-card {
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header,
+  .intro,
+  .calculator-shell,
+  footer {
+    width: min(calc(100% - 28px), 1240px);
+  }
+
+  .site-header {
+    min-height: 72px;
+  }
+
+  .brand-copy small,
+  .local-pill {
+    display: none;
+  }
+
+  .intro {
+    padding-top: 54px;
+  }
+
+  .intro h1 {
+    font-size: clamp(43px, 14vw, 66px);
+  }
+
+  .calculator-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fixed-assumptions {
+    grid-template-columns: 1fr;
+  }
+
+  .card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .text-button {
+    padding: 0;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metric-grid div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .metric-grid div:nth-child(4) {
+    border-top: 1px solid var(--line);
+  }
+
+  .form-actions,
+  footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .upload-placeholder {
+    width: min(calc(100% - 28px), 820px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+    <script src="./app.bundle.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="PH E-commerce Profitability Calculator home">
+        <span class="brand-mark" aria-hidden="true">PH</span>
+        <span class="brand-copy">
+          <strong>PH E-commerce Profitability Calculator</strong>
+          <small>Local E-commerce Calculator</small>
+        </span>
+      </a>
+      <span class="local-pill"><span aria-hidden="true"></span>Private on your device</span>
+    </header>
+
+    <main id="top">
+      <section class="intro">
+        <h1>ARE YOU SURE YOU'RE<br /><span>PROFITABLE?</span></h1>
+        <p class="intro-copy">Your quick local e-commerce profitability calculator.</p>
+
+        <nav class="calculator-switch" aria-label="Calculator type">
+          <button class="switch-option is-active" type="button" data-view="quick" aria-pressed="true">
+            <span class="switch-number">01</span>
+            <span><strong>Quick Calculator</strong><small>One product run</small></span>
+          </button>
+          <button class="switch-option" type="button" data-view="upload" aria-pressed="false">
+            <span class="switch-number">02</span>
+            <span><strong>Upload Your Data</strong><small>Next phase</small></span>
+            <b>SOON</b>
+          </button>
+        </nav>
+      </section>
+
+      <section class="calculator-shell" id="quick-panel" data-panel="quick">
+        <form class="input-card" id="calculator-form" novalidate>
+          <div class="card-heading">
+            <div>
+              <span class="section-label">YOUR INPUTS</span>
+              <h2>Your product run numbers</h2>
+            </div>
+            <button class="text-button" id="sample-button" type="button">Use sample</button>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>COD price</span>
+              <span class="input-wrap"><b>₱</b><input id="cod" name="cod" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>COD fee</span>
+              <span class="input-wrap"><input id="cod-fee" name="codFeePercent" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
+            </label>
+            <label class="field">
+              <span>RTS rate</span>
+              <span class="input-wrap"><input id="rts" name="rtsPercent" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
+            </label>
+            <label class="field">
+              <span>COG per item</span>
+              <span class="input-wrap"><b>₱</b><input id="cog" name="cog" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>Ad spend</span>
+              <span class="input-wrap"><b>₱</b><input id="ad-spend" name="adSpend" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>Order quantity</span>
+              <span class="input-wrap"><input id="order-qty" name="orderQty" type="number" min="1" step="1" inputmode="numeric" placeholder="0" required /><b>orders</b></span>
+            </label>
+          </div>
+
+          <div class="fixed-assumptions" aria-label="Fixed workbook assumptions">
+            <p><span>₱40</span> base shipping fee / order</p>
+            <p><span>12%</span> VAT used by the workbook</p>
+          </div>
+
+          <div class="form-actions">
+            <p>Results update as you type.</p>
+            <button class="reset-button" id="reset-button" type="reset">Reset all</button>
+          </div>
+        </form>
+
+        <aside class="result-card is-empty" id="result-card" aria-live="polite">
+          <div class="result-topline">
+            <span class="section-label">LIVE ESTIMATE</span>
+            <span class="status-chip" id="status-chip">Complete all inputs</span>
+          </div>
+          <div class="hero-result">
+            <span>Estimated net income</span>
+            <strong id="net-income">₱—</strong>
+            <small id="net-caption">Enter all six numbers to see the estimate.</small>
+            <div class="rts-net-line">
+              <span>Net including cost of goods of RTS inventory</span>
+              <strong id="net-including-rts">₱—</strong>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <div><span>ROAS</span><strong id="roas">—</strong></div>
+            <div><span>CPP</span><strong id="cpp">₱—</strong></div>
+            <div><span>Delivered</span><strong id="delivered-orders">—</strong></div>
+            <div class="rts-metric"><span>RTS</span><strong id="rts-orders">—</strong></div>
+          </div>
+
+          <div class="breakdown">
+            <div class="breakdown-heading"><h3>Income breakdown</h3><span>Workbook logic</span></div>
+            <dl>
+              <div><dt>Gross receivable</dt><dd id="gross-receivable">₱—</dd></div>
+              <div><dt>Total COG</dt><dd id="total-cog">− ₱—</dd></div>
+              <div><dt>Ad spend</dt><dd id="ad-spend-output">− ₱—</dd></div>
+              <div><dt>VAT on ad spend</dt><dd id="vat">− ₱—</dd></div>
+              <div><dt>Base shipping fees</dt><dd id="base-sf">− ₱—</dd></div>
+              <div><dt>COD fee + 12% VAT</dt><dd id="cod-fee-output">− ₱—</dd></div>
+              <div class="subtotal-row"><dt>Estimated net income</dt><dd id="net-before-rts">₱—</dd></div>
+              <div class="addback-row"><dt>RTS inventory COG</dt><dd id="rts-addback">+ ₱—</dd></div>
+            </dl>
+          </div>
+
+          <p class="formula-note">
+            Main estimate follows the workbook's NET formula without the RTS inventory COG add-back.
+            This is an operational estimate, not formal tax or accounting advice.
+          </p>
+        </aside>
+      </section>
+
+      <section class="upload-placeholder" id="upload-panel" data-panel="upload" hidden>
+        <div class="coming-icon" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="eyebrow"><span>02</span> COMING NEXT</p>
+        <h2>Upload Your Data Calculator</h2>
+        <p>
+          This is where we'll connect the bulk calculator for multiple products using Excel or CSV.
+          The quick calculator and formula behavior come first.
+        </p>
+        <ul>
+          <li>Multiple product rows</li>
+          <li>Automatic net income per item</li>
+          <li>Summary totals at export-ready results</li>
+        </ul>
+        <button class="back-button" type="button" data-view="quick">Back to Quick Calculator</button>
+      </section>
+    </main>
+
+    <footer>
+      <div><strong>PH E-commerce Profitability Calculator</strong><span>Built for small local e-commerce teams.</span></div>
+      <p>Formula based on <strong>calculator sample file.xlsx</strong></p>
+    </footer>
+  </body>
+</html>
