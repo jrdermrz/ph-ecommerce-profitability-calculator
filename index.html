@@ -139,7 +139,7 @@ button {
 .intro {
   width: min(calc(100% - 40px), 960px);
   margin: 0 auto;
-  padding: clamp(64px, 9vw, 112px) 0 36px;
+  padding: clamp(28px, 4vw, 52px) 0 28px;
   text-align: center;
 }
 
@@ -901,10 +901,35 @@ input::-webkit-inner-spin-button {
 
 .column-note strong { color: #b7c6bf; }
 
-.sync-settings-grid {
+.sync-rules-step {
+  padding-bottom: 2px;
+}
+
+.sync-fixed-rules {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sync-fixed-rules p {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px 3px 10px 3px;
+  background: rgba(56, 215, 161, 0.06);
+}
+
+.sync-fixed-rules strong {
+  color: var(--green-bright);
+  font-size: 15px;
+}
+
+.sync-fixed-rules span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
 }
 
 .sync-summary {
@@ -1125,7 +1150,7 @@ input:focus-visible {
   }
 
   .intro {
-    padding-top: 54px;
+    padding-top: 26px;
   }
 
   .intro h1 {
@@ -1174,7 +1199,7 @@ input:focus-visible {
     flex-direction: column;
   }
 
-  .sync-settings-grid,
+  .sync-fixed-rules,
   .sync-totals {
     grid-template-columns: 1fr;
   }
@@ -1369,19 +1394,13 @@ input:focus-visible {
               <p class="column-note">Required columns: <strong>Page Name, Item Name, COD, Adspent, Orders</strong></p>
             </div>
 
-            <div class="sync-step">
-              <div class="sync-step-heading"><span>03</span><div><strong>Calculation settings</strong><small>Applied to every uploaded row</small></div></div>
-              <div class="sync-settings-grid">
-                <label class="field">
-                  <span>COD fee</span>
-                  <span class="input-wrap"><input id="sync-cod-fee" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
-                </label>
-                <label class="field">
-                  <span>Shipping fee per order</span>
-                  <span class="input-wrap"><b>₱</b><input id="sync-shipping-fee" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
-                </label>
+            <div class="sync-step sync-rules-step">
+              <div class="sync-step-heading"><span>03</span><div><strong>Fixed calculation rules</strong><small>Automatically applied to every uploaded row</small></div></div>
+              <div class="sync-fixed-rules" aria-label="Fixed Data Sync calculation rules">
+                <p><strong>1%</strong><span>COD fee</span></p>
+                <p><strong>₱37.50</strong><span>Shipping per order</span></p>
+                <p><strong>12%</strong><span>VAT</span></p>
               </div>
-              <div class="fixed-assumptions single-assumption"><p><span>12%</span> VAT used by the workbook</p></div>
             </div>
           </form>
 
@@ -1390,7 +1409,7 @@ input:focus-visible {
             <div class="sync-main-net">
               <span>Projected net without RTS</span>
               <strong id="sync-net-without-rts">₱—</strong>
-              <small id="sync-caption">Upload both data sources and complete the settings.</small>
+              <small id="sync-caption">Upload the product master and daily performance data.</small>
             </div>
             <div class="sync-secondary-net"><span>Projected net with RTS</span><strong id="sync-net-with-rts">₱—</strong></div>
             <div class="net-ratio-card"><span>Net Ratio</span><strong id="sync-net-ratio">1:—</strong><small>Projected net without RTS ÷ ad spend</small></div>
