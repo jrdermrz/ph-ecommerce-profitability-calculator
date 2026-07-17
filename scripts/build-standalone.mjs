@@ -1,0 +1,22 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const publicRoot = resolve(projectRoot, "public");
+const outputPath = resolve(projectRoot, "outputs", "KITAKALKULA-OFFLINE.html");
+const readPublic = (path) => readFile(resolve(publicRoot, path), "utf8");
+const safeInlineScript = (source) => source.replaceAll(/<\/script/gi, "<\\/script");
+
+let html = await readPublic("index.html");
+const [css, app] = await Promise.all([readPublic("app.css"), readPublic("app.js")]);
+
+html = html
+  .replaceAll("__SITE_ORIGIN__", ".")
+  .replace('<link rel="stylesheet" href="./app.css" />', `<style>${css}</style>`)
+  .replace(/\s*<script src="\.\/app\.js" defer><\/script>/, "")
+  .replace("</body>", `<script>${safeInlineScript(app)}</script>\n</body>`);
+
+await mkdir(dirname(outputPath), { recursive: true });
+await writeFile(outputPath, html, "utf8");
+console.log(outputPath);

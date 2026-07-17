@@ -1,379 +1,220 @@
 (() => {
   "use strict";
 
-  const excelExtensions = [".xlsx", ".xls"];
-  const fileInput = document.getElementById("excel-upload");
-  const uploadCard = document.getElementById("upload-card");
-  const fileCopy = document.getElementById("file-copy");
-  const readyBadge = document.getElementById("ready-badge");
-  const errorMessage = document.getElementById("error-message");
-  const generateButton = document.getElementById("generate-button");
-  const resultsSection = document.getElementById("results");
-  const senderFilter = document.getElementById("sender-filter");
-  const productSearch = document.getElementById("product-search");
-  const resultsBody = document.getElementById("results-body");
-  const noResults = document.getElementById("no-results");
-  const rowCount = document.getElementById("row-count");
-  const { normaliseProductName, productFingerprint, productsAreEquivalent } =
-    window.RTSProductNormalizer;
+  const BASE_SHIPPING_FEE = 40;
+  const VAT_RATE = 0.12;
 
-  let parsedFile = null;
-  let metrics = [];
-
-  function normaliseHeader(value) {
-    return String(value ?? "")
-      .replace(/^\uFEFF/, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+  function finiteNumber(value, fallback = 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
   }
 
-  function normaliseKey(value) {
-    return String(value ?? "")
-      .normalize("NFKC")
-      .toLocaleLowerCase()
-      .replace(/[^\p{L}\p{N}]+/gu, " ")
-      .trim();
+  function computeNetIncome(rawInputs) {
+    const cod = Math.max(0, finiteNumber(rawInputs.cod));
+    const codFeePercent = Math.min(100, Math.max(0, finiteNumber(rawInputs.codFeePercent)));
+    const rtsPercent = Math.min(100, Math.max(0, finiteNumber(rawInputs.rtsPercent)));
+    const cog = Math.max(0, finiteNumber(rawInputs.cog));
+    const adSpend = Math.max(0, finiteNumber(rawInputs.adSpend));
+    const orderQty = Math.max(0, Math.floor(finiteNumber(rawInputs.orderQty)));
+
+    const deliveredOrders = Math.floor(((100 - rtsPercent) / 100) * orderQty);
+    const rtsOrders = Math.ceil((rtsPercent / 100) * orderQty);
+    const roas = adSpend > 0 ? (cod * orderQty) / adSpend : null;
+    const cpp = orderQty > 0 ? adSpend / orderQty : null;
+    const grossReceivable = deliveredOrders * cod;
+    const vat = adSpend * VAT_RATE;
+    const totalCog = cog * orderQty;
+    const baseShippingFees = BASE_SHIPPING_FEE * orderQty;
+    const codFee = deliveredOrders * ((codFeePercent / 100) * cod) * (1 + VAT_RATE);
+    const netBeforeRts =
+      grossReceivable - totalCog - vat - baseShippingFees - codFee - adSpend;
+    const rtsInventoryAddBack = rtsOrders * cog;
+    const netIncome = netBeforeRts + rtsInventoryAddBack;
+
+    return {
+      cod,
+      codFeePercent,
+      rtsPercent,
+      cog,
+      adSpend,
+      orderQty,
+      deliveredOrders,
+      rtsOrders,
+      roas,
+      cpp,
+      grossReceivable,
+      vat,
+      totalCog,
+      baseShippingFees,
+      codFee,
+      netBeforeRts,
+      rtsInventoryAddBack,
+      netIncome,
+    };
   }
 
-  const pageNameBySender = new Map(
-    Object.entries(window.PAGE_NAME_BY_SENDER ?? {}).map(([sender, page]) => [
-      normaliseKey(sender),
-      page,
-    ]),
-  );
+  window.NetIncomeCalculator = {
+    BASE_SHIPPING_FEE,
+    VAT_RATE,
+    computeNetIncome,
+  };
 
-  function pageNameFor(sender) {
-    return pageNameBySender.get(normaliseKey(sender)) ?? sender;
+  if (typeof document === "undefined") return;
+
+  const form = document.getElementById("calculator-form");
+  const inputs = {
+    item: document.getElementById("item"),
+    cod: document.getElementById("cod"),
+    orderQty: document.getElementById("order-qty"),
+    cog: document.getElementById("cog"),
+    adSpend: document.getElementById("ad-spend"),
+    codFeePercent: document.getElementById("cod-fee"),
+    rtsPercent: document.getElementById("rts"),
+  };
+
+  const outputs = {
+    resultCard: document.getElementById("result-card"),
+    statusChip: document.getElementById("status-chip"),
+    productName: document.getElementById("product-name"),
+    netIncome: document.getElementById("net-income"),
+    netCaption: document.getElementById("net-caption"),
+    roas: document.getElementById("roas"),
+    cpp: document.getElementById("cpp"),
+    deliveredOrders: document.getElementById("delivered-orders"),
+    rtsOrders: document.getElementById("rts-orders"),
+    grossReceivable: document.getElementById("gross-receivable"),
+    totalCog: document.getElementById("total-cog"),
+    adSpend: document.getElementById("ad-spend-output"),
+    vat: document.getElementById("vat"),
+    baseShippingFees: document.getElementById("base-sf"),
+    codFee: document.getElementById("cod-fee-output"),
+    netBeforeRts: document.getElementById("net-before-rts"),
+    rtsInventoryAddBack: document.getElementById("rts-addback"),
+  };
+
+  const currency = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const integer = new Intl.NumberFormat("en-PH", { maximumFractionDigits: 0 });
+  const ratio = new Intl.NumberFormat("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  function money(value) {
+    return currency.format(value).replace("PHP", "₱").replace(/\s+/g, "");
   }
 
-  function classifyStatus(value) {
-    const status = value
-      .toLocaleLowerCase()
-      .replace(/[_–—-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (/\bdelivered\b/.test(status)) return "delivered";
-    if (
-      /\brts\b/.test(status) ||
-      /\brto\b/.test(status) ||
-      /return(?:ed)?\s+to\s+sender/.test(status) ||
-      /^return(?:ed)?$/.test(status)
-    ) {
-      return "rts";
-    }
-    if (/\bin\s+transit\b/.test(status) || status === "transit") return "inTransit";
-    return null;
+  function signedMoney(value, sign) {
+    return `${sign} ${money(Math.abs(value))}`;
   }
 
-  function computeMetrics(rows) {
-    const groups = [];
-    const groupsBySender = new Map();
-
-    for (const row of rows) {
-      const bucket = classifyStatus(row.status);
-      if (!bucket) continue;
-      const sender = row.sender.trim();
-      const product = normaliseProductName(row.item);
-      const fingerprint = productFingerprint(row.item);
-      if (!sender || !product || !fingerprint) continue;
-
-      const senderKey = normaliseKey(sender);
-      const senderGroups = groupsBySender.get(senderKey) ?? [];
-      const matchingGroups = senderGroups.filter((group) =>
-        group.fingerprints.some((knownFingerprint) =>
-          productsAreEquivalent(knownFingerprint, fingerprint),
-        ),
-      );
-      let current = matchingGroups[0];
-      if (!current) {
-        current = {
-          id: `${senderKey}::${fingerprint.replace(/\s+/g, "")}`,
-          sender,
-          pageName: pageNameFor(sender),
-          product,
-          fingerprint,
-          fingerprints: [fingerprint],
-          labelCounts: new Map(),
-          delivered: 0,
-          rts: 0,
-          inTransit: 0,
-        };
-        senderGroups.push(current);
-        groupsBySender.set(senderKey, senderGroups);
-        groups.push(current);
-      } else {
-        if (!current.fingerprints.includes(fingerprint)) current.fingerprints.push(fingerprint);
-        for (const duplicate of matchingGroups.slice(1)) {
-          current.delivered += duplicate.delivered;
-          current.rts += duplicate.rts;
-          current.inTransit += duplicate.inTransit;
-          for (const knownFingerprint of duplicate.fingerprints) {
-            if (!current.fingerprints.includes(knownFingerprint)) {
-              current.fingerprints.push(knownFingerprint);
-            }
-          }
-          for (const [label, count] of duplicate.labelCounts) {
-            current.labelCounts.set(label, (current.labelCounts.get(label) ?? 0) + count);
-          }
-          senderGroups.splice(senderGroups.indexOf(duplicate), 1);
-          groups.splice(groups.indexOf(duplicate), 1);
-        }
-      }
-      current[bucket] += 1;
-      current.labelCounts.set(product, (current.labelCounts.get(product) ?? 0) + 1);
-    }
-
-    return groups
-      .map((group) => {
-        const labels = Array.from(group.labelCounts.entries());
-        const readableLabels = labels.filter(
-          ([label]) => normaliseKey(label).split(/\s+/).length > 1 || label.length < 14,
-        );
-        const product = (readableLabels.length ? readableLabels : labels).sort(
-          (a, b) => b[1] - a[1] || a[0].length - b[0].length || a[0].localeCompare(b[0]),
-        )[0][0];
-        const completed = group.delivered + group.rts;
-        const deliveredRate = completed ? group.delivered / completed : 0;
-        const rtsRate = completed ? group.rts / completed : 0;
-        const { labelCounts, fingerprints, ...reportGroup } = group;
-        return {
-          ...reportGroup,
-          product,
-          deliveredRate,
-          rtsRate,
-          deliveryForecast: deliveredRate * group.inTransit,
-          rtsForecast: rtsRate * group.inTransit,
-        };
-      })
-      .sort((a, b) => {
-        const aVolume = a.delivered + a.rts + a.inTransit;
-        const bVolume = b.delivered + b.rts + b.inTransit;
-        return (
-          a.pageName.localeCompare(b.pageName) ||
-          a.product.localeCompare(b.product) ||
-          bVolume - aVolume
-        );
-      });
+  function hasCompleteInputs() {
+    return [
+      inputs.cod,
+      inputs.orderQty,
+      inputs.cog,
+      inputs.adSpend,
+      inputs.codFeePercent,
+      inputs.rtsPercent,
+    ].every((input) => input.value !== "") && finiteNumber(inputs.orderQty.value) > 0;
   }
 
-  function formatPercent(value) {
-    return new Intl.NumberFormat("en", {
-      style: "percent",
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value);
+  function readInputs() {
+    return {
+      cod: inputs.cod.value,
+      orderQty: inputs.orderQty.value,
+      cog: inputs.cog.value,
+      adSpend: inputs.adSpend.value,
+      codFeePercent: inputs.codFeePercent.value,
+      rtsPercent: inputs.rtsPercent.value,
+    };
   }
 
-  function formatForecast(value) {
-    return new Intl.NumberFormat("en", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value);
+  function renderEmpty() {
+    outputs.resultCard.classList.remove("is-positive", "is-negative");
+    outputs.resultCard.classList.add("is-empty");
+    outputs.statusChip.textContent = "Kumpletuhin ang inputs";
+    outputs.productName.textContent = inputs.item.value.trim() || "Your product";
+    outputs.netIncome.textContent = "₱—";
+    outputs.netCaption.textContent = "Ilagay ang anim na numbers para makita ang estimate.";
+    outputs.roas.textContent = "—";
+    outputs.cpp.textContent = "₱—";
+    outputs.deliveredOrders.textContent = "—";
+    outputs.rtsOrders.textContent = "—";
+    outputs.grossReceivable.textContent = "₱—";
+    outputs.totalCog.textContent = "− ₱—";
+    outputs.adSpend.textContent = "− ₱—";
+    outputs.vat.textContent = "− ₱—";
+    outputs.baseShippingFees.textContent = "− ₱—";
+    outputs.codFee.textContent = "− ₱—";
+    outputs.netBeforeRts.textContent = "₱—";
+    outputs.rtsInventoryAddBack.textContent = "+ ₱—";
   }
 
-  function setError(message = "") {
-    errorMessage.textContent = message;
-    errorMessage.hidden = !message;
-  }
-
-  function setFileCopy(title, detail) {
-    fileCopy.replaceChildren();
-    const strong = document.createElement("strong");
-    const span = document.createElement("span");
-    strong.className = "file-name";
-    strong.textContent = title;
-    span.textContent = detail;
-    fileCopy.append(strong, span);
-  }
-
-  async function readExcelFile(file) {
-    if (!file) return;
-    const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-    if (!excelExtensions.includes(extension)) {
-      parsedFile = null;
-      metrics = [];
-      generateButton.disabled = true;
-      readyBadge.hidden = true;
-      fileInput.value = "";
-      setError("Please upload an Excel file in .xlsx or .xls format.");
+  function render() {
+    outputs.productName.textContent = inputs.item.value.trim() || "Your product";
+    if (!hasCompleteInputs()) {
+      renderEmpty();
       return;
     }
 
-    setError();
-    setFileCopy("Reading workbook…", "Checking columns and order rows");
-    generateButton.disabled = true;
-    readyBadge.hidden = true;
-    resultsSection.hidden = true;
-
-    try {
-      if (!window.XLSX) throw new Error("The Excel reader is still loading. Please try again.");
-      const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array" });
-      let matched;
-
-      for (const sheetName of workbook.SheetNames) {
-        const worksheet = workbook.Sheets[sheetName];
-        const rawRows = window.XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: "",
-          raw: false,
-        });
-        const headerRowIndex = rawRows.slice(0, 25).findIndex((row) => {
-          const headers = row.map(normaliseHeader);
-          return (
-            headers.includes("orderstatus") &&
-            headers.includes("sendername") &&
-            headers.includes("itemname")
-          );
-        });
-        if (headerRowIndex === -1) continue;
-
-        const headers = rawRows[headerRowIndex].map(normaliseHeader);
-        const statusIndex = headers.indexOf("orderstatus");
-        const senderIndex = headers.indexOf("sendername");
-        const itemIndex = headers.indexOf("itemname");
-        const rows = rawRows
-          .slice(headerRowIndex + 1)
-          .map((row) => ({
-            status: String(row[statusIndex] ?? "").trim(),
-            sender: String(row[senderIndex] ?? "").trim(),
-            item: String(row[itemIndex] ?? "").trim(),
-          }))
-          .filter((row) => row.status || row.sender || row.item);
-        matched = { rows, sourceRows: rows.length, sheetName };
-        break;
-      }
-
-      if (!matched) {
-        throw new Error(
-          'No sheet contains all three required columns: "Order Status", "Sender Name", and "Item Name".',
-        );
-      }
-      if (!matched.rows.length) {
-        throw new Error("The required columns were found, but there are no order rows to process.");
-      }
-
-      parsedFile = { name: file.name, ...matched };
-      metrics = computeMetrics(parsedFile.rows);
-      setFileCopy(
-        parsedFile.name,
-        `${parsedFile.sourceRows.toLocaleString()} rows · ${parsedFile.sheetName} sheet`,
-      );
-      readyBadge.hidden = false;
-      generateButton.disabled = false;
-    } catch (error) {
-      parsedFile = null;
-      metrics = [];
-      fileInput.value = "";
-      setFileCopy("Choose a file or drop it here", ".XLSX or .XLS only · Required columns listed below");
-      setError(error instanceof Error ? error.message : "The Excel file could not be read.");
-    }
+    const result = computeNetIncome(readInputs());
+    const isPositive = result.netIncome >= 0;
+    outputs.resultCard.classList.remove("is-empty", "is-positive", "is-negative");
+    outputs.resultCard.classList.add(isPositive ? "is-positive" : "is-negative");
+    outputs.statusChip.textContent = isPositive ? "Positive estimate" : "Possible loss";
+    outputs.netIncome.textContent = money(result.netIncome);
+    outputs.netCaption.textContent = isPositive
+      ? "Estimated na matitira matapos ang listed costs at RTS inventory recovery."
+      : "Mas mataas ang estimated costs kaysa sa receivable para sa inputs na ito.";
+    outputs.roas.textContent = result.roas === null ? "—" : `${ratio.format(result.roas)}×`;
+    outputs.cpp.textContent = result.cpp === null ? "₱—" : money(result.cpp);
+    outputs.deliveredOrders.textContent = integer.format(result.deliveredOrders);
+    outputs.rtsOrders.textContent = integer.format(result.rtsOrders);
+    outputs.grossReceivable.textContent = money(result.grossReceivable);
+    outputs.totalCog.textContent = signedMoney(result.totalCog, "−");
+    outputs.adSpend.textContent = signedMoney(result.adSpend, "−");
+    outputs.vat.textContent = signedMoney(result.vat, "−");
+    outputs.baseShippingFees.textContent = signedMoney(result.baseShippingFees, "−");
+    outputs.codFee.textContent = signedMoney(result.codFee, "−");
+    outputs.netBeforeRts.textContent = money(result.netBeforeRts);
+    outputs.rtsInventoryAddBack.textContent = signedMoney(result.rtsInventoryAddBack, "+");
   }
 
-  function appendCell(row, primary, secondary, className = "") {
-    const cell = document.createElement("td");
-    if (className) cell.className = className;
-    const strong = document.createElement("strong");
-    const span = document.createElement("span");
-    strong.textContent = primary;
-    span.textContent = secondary;
-    cell.append(strong, span);
-    row.appendChild(cell);
+  function showView(view) {
+    for (const panel of document.querySelectorAll("[data-panel]")) {
+      panel.hidden = panel.dataset.panel !== view;
+    }
+    for (const button of document.querySelectorAll(".switch-option")) {
+      const active = button.dataset.view === view;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+    if (view === "quick") render();
   }
 
-  function renderRows() {
-    const selectedSender = senderFilter.value;
-    const query = normaliseKey(productSearch.value);
-    const filtered = metrics.filter((item) => {
-      const senderMatches = selectedSender === "all" || item.sender === selectedSender;
-      const queryMatches =
-        !query ||
-        normaliseKey(item.product).includes(query) ||
-        normaliseKey(item.sender).includes(query) ||
-        normaliseKey(item.pageName).includes(query);
-      return senderMatches && queryMatches;
-    });
+  for (const input of Object.values(inputs)) input.addEventListener("input", render);
 
-    resultsBody.replaceChildren();
-    for (const item of filtered) {
-      const row = document.createElement("tr");
-      const productCell = document.createElement("td");
-      const product = document.createElement("strong");
-      const sender = document.createElement("span");
-      product.textContent = item.pageName;
-      sender.className = "item-label";
-      sender.textContent = item.product;
-      productCell.append(product, sender);
-      row.appendChild(productCell);
-      appendCell(row, formatPercent(item.deliveredRate), `${item.delivered.toLocaleString()} delivered`);
-      appendCell(row, formatPercent(item.rtsRate), `${item.rts.toLocaleString()} RTS`, "rts-column");
-      appendCell(
-        row,
-        formatForecast(item.deliveryForecast),
-        `of ${item.inTransit.toLocaleString()} in transit`,
-      );
-      appendCell(
-        row,
-        formatForecast(item.rtsForecast),
-        `of ${item.inTransit.toLocaleString()} in transit`,
-        "rts-column",
-      );
-      resultsBody.appendChild(row);
-    }
-
-    rowCount.textContent = `${filtered.length.toLocaleString()} page-item rows`;
-    noResults.hidden = filtered.length > 0;
+  for (const button of document.querySelectorAll("[data-view]")) {
+    button.addEventListener("click", () => showView(button.dataset.view));
   }
 
-  function renderReport() {
-    if (!metrics.length) {
-      setError('No rows matched the statuses "Delivered", "RTS"/"Return to Sender", or "In Transit".');
-      return;
-    }
-
-    const senders = Array.from(
-      new Map(metrics.map((item) => [item.sender, item.pageName])).entries(),
-    ).sort((a, b) => a[1].localeCompare(b[1]));
-    const pages = new Set(metrics.map((item) => normaliseKey(item.pageName)));
-    const products = new Set(metrics.map((item) => normaliseKey(item.product)));
-    const transit = metrics.reduce((sum, item) => sum + item.inTransit, 0);
-
-    senderFilter.replaceChildren();
-    const allOption = document.createElement("option");
-    allOption.value = "all";
-    allOption.textContent = "All page names";
-    senderFilter.appendChild(allOption);
-    for (const [sender, pageName] of senders) {
-      const option = document.createElement("option");
-      option.value = sender;
-      option.textContent = pageName;
-      senderFilter.appendChild(option);
-    }
-
-    document.getElementById("sender-total").textContent = pages.size.toLocaleString();
-    document.getElementById("product-total").textContent = products.size.toLocaleString();
-    document.getElementById("transit-total").textContent = transit.toLocaleString();
-    productSearch.value = "";
-    resultsSection.hidden = false;
-    setError();
-    renderRows();
-    window.setTimeout(() => resultsSection.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-  }
-
-  fileInput.addEventListener("change", () => readExcelFile(fileInput.files?.[0]));
-  generateButton.addEventListener("click", renderReport);
-  senderFilter.addEventListener("change", renderRows);
-  productSearch.addEventListener("input", renderRows);
-
-  uploadCard.addEventListener("dragenter", (event) => {
-    event.preventDefault();
-    uploadCard.classList.add("is-dragging");
+  document.getElementById("sample-button").addEventListener("click", () => {
+    inputs.item.value = "Best-selling organizer";
+    inputs.cod.value = "899";
+    inputs.orderQty.value = "100";
+    inputs.cog.value = "210";
+    inputs.adSpend.value = "12500";
+    inputs.codFeePercent.value = "2.5";
+    inputs.rtsPercent.value = "18";
+    render();
   });
-  uploadCard.addEventListener("dragover", (event) => event.preventDefault());
-  uploadCard.addEventListener("dragleave", () => uploadCard.classList.remove("is-dragging"));
-  uploadCard.addEventListener("drop", (event) => {
-    event.preventDefault();
-    uploadCard.classList.remove("is-dragging");
-    readExcelFile(event.dataTransfer?.files?.[0]);
-  });
+
+  form.addEventListener("reset", () => window.setTimeout(render, 0));
+  render();
 })();

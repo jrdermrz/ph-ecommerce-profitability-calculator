@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const title = "FulfilRate — Delivery & RTS Forecasts";
+const title = "KitaKalkula — PH E-commerce Net Income Calculator";
 const description =
-  "Upload an order-status Excel file and calculate product-level delivery rates, RTS rates, and in-transit forecasts for every sender.";
-const imageUrl =
-  "https://fulfilrate-forecast.proud-carp-2250.chatgpt.site/og.png";
+  "Quick net income estimates for Philippine COD e-commerce product runs.";
 
 export const metadata: Metadata = {
   title,
@@ -14,30 +12,19 @@ export const metadata: Metadata = {
     title,
     description,
     type: "website",
-    images: [
-      {
-        url: imageUrl,
-        width: 1731,
-        height: 909,
-        alt: "FulfilRate delivery intelligence dashboard",
-      },
-    ],
+    images: [{ url: "/og.png", width: 1664, height: 960, alt: "KitaKalkula net income calculator" }],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: [imageUrl],
+    images: ["/og.png"],
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="fil">
       <body>{children}</body>
     </html>
   );

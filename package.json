@@ -1,5 +1,5 @@
 {
-  "name": "fulfilrate",
+  "name": "kitakalkula",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -8,8 +8,10 @@
   "scripts": {
     "dev": "node scripts/run-vinext.mjs dev",
     "build": "node scripts/run-vinext.mjs build",
+    "build:github-pages": "node scripts/build-github-pages.mjs",
+    "build:standalone": "node scripts/build-standalone.mjs",
     "start": "node scripts/run-vinext.mjs start",
-    "test": "node scripts/run-vinext.mjs build && node --test tests/rendered-html.test.mjs",
+    "test": "node scripts/run-vinext.mjs build && node scripts/build-standalone.mjs && node scripts/build-github-pages.mjs && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

@@ -1,154 +1,169 @@
 <!doctype html>
-<html lang="en">
+<html lang="fil">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RTS CHECKER — Delivered &amp; RTS Rates</title>
+    <title>KitaKalkula — PH E-commerce Net Income Calculator</title>
     <meta
       name="description"
-      content="Upload an order-status Excel file and check delivered rates, RTS rates, and in-transit forecasts for every page and product."
+      content="A quick net income calculator for small Philippine e-commerce businesses, based on COD price, RTS rate, product cost, ad spend, and order volume."
     />
-    <meta property="og:title" content="RTS CHECKER — Delivered &amp; RTS Rates" />
-    <meta property="og:description" content="Fast Excel-powered delivered and RTS rate checking for e-commerce operations." />
+    <meta property="og:title" content="KitaKalkula — I-compute ang kita bago mag-scale" />
+    <meta property="og:description" content="Quick net income estimates for Philippine e-commerce product runs." />
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <link rel="icon" href="/favicon.svg" />
-    <link rel="stylesheet" href="/app.css" />
-    <script src="/vendor/xlsx.full.min.js" defer></script>
-    <script src="/page-mapping.js" defer></script>
-    <script src="/product-normalizer.js" defer></script>
-    <script src="/app.js" defer></script>
+    <meta property="og:image" content="__SITE_ORIGIN__/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="__SITE_ORIGIN__/og.png" />
+    <link rel="stylesheet" href="./app.css" />
+    <script src="./app.js" defer></script>
   </head>
   <body>
-    <main>
-      <header class="site-header">
-        <a class="brand" href="#top" aria-label="RTS CHECKER home">
-          <span class="brand-mark" aria-hidden="true">RTS</span>
-          <span>
-            <strong>RTS CHECKER</strong>
-            <small>Delivered &amp; RTS intelligence</small>
-          </span>
-        </a>
-        <span class="privacy-pill">
-          <span class="privacy-dot" aria-hidden="true"></span>
-          Your file stays on this device
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="KitaKalkula home">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span class="brand-copy">
+          <strong>KitaKalkula</strong>
+          <small>PH E-commerce Calculator</small>
         </span>
-      </header>
+      </a>
+      <span class="local-pill"><span aria-hidden="true"></span>Private sa device mo</span>
+    </header>
 
-      <section class="hero" id="top">
-        <div class="eyebrow"><span></span> FAST RTS CHECKER</div>
-        <h1>
-          DETERMINE YOUR<br />
-          <span class="delivered-word">DELIVERED</span> AND <span class="rts-word">RTS</span> RATES
-        </h1>
+    <main id="top">
+      <section class="intro">
+        <p class="eyebrow"><span>01</span> QUICK PROFIT CHECK</p>
+        <h1>I-compute ang kita.<br /><em>Bago ka mag-scale.</em></h1>
+        <p class="intro-copy">
+          Isang mabilis na net income estimate para sa COD e-commerce—kasama ang RTS,
+          product cost, ad spend, shipping fee, COD fee, at VAT assumptions mula sa workbook mo.
+        </p>
 
-        <div class="upload-card" id="upload-card">
-          <div class="upload-topline">
-            <span class="step-number">01</span>
-            <span>SELECT YOUR ORDER EXPORT</span>
-          </div>
-
-          <input
-            id="excel-upload"
-            type="file"
-            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-            hidden
-          />
-
-          <div class="upload-action-row">
-            <label class="upload-button" for="excel-upload">
-              <span class="upload-arrow" aria-hidden="true">↑</span>
-              UPLOAD FILE
-            </label>
-            <div class="file-copy" id="file-copy" aria-live="polite">
-              <strong>Choose a file or drop it here</strong>
-              <span>.XLSX or .XLS only · Required columns listed below</span>
-            </div>
-            <span class="ready-badge" id="ready-badge" hidden>READY</span>
-          </div>
-
-          <div class="required-columns">
-            <span>REQUIRED COLUMNS</span>
-            <ul>
-              <li>Order Status</li>
-              <li>Sender Name</li>
-              <li>Item Name</li>
-            </ul>
-          </div>
-
-          <p class="error-message" id="error-message" role="alert" hidden></p>
-
-          <button class="generate-button" id="generate-button" type="button" disabled>
-            GENERATE
-            <span aria-hidden="true">→</span>
+        <nav class="calculator-switch" aria-label="Calculator type">
+          <button class="switch-option is-active" type="button" data-view="quick" aria-pressed="true">
+            <span class="switch-number">01</span>
+            <span><strong>Quick Calculator</strong><small>Isang product run</small></span>
           </button>
-        </div>
+          <button class="switch-option" type="button" data-view="upload" aria-pressed="false">
+            <span class="switch-number">02</span>
+            <span><strong>Upload Your Data</strong><small>Susunod na phase</small></span>
+            <b>SOON</b>
+          </button>
+        </nav>
+      </section>
 
-        <div class="formula-strip" aria-label="Forecast formulas">
-          <div>
-            <span class="formula-icon delivery-icon" aria-hidden="true">D</span>
-            <p><strong>DELIVERY FORECAST</strong><span>Delivered rate × In Transit</span></p>
+      <section class="calculator-shell" id="quick-panel" data-panel="quick">
+        <form class="input-card" id="calculator-form" novalidate>
+          <div class="card-heading">
+            <div>
+              <span class="section-label">YOUR INPUTS</span>
+              <h2>Mga numero ng product run</h2>
+            </div>
+            <button class="text-button" id="sample-button" type="button">Gumamit ng sample</button>
           </div>
-          <div>
-            <span class="formula-icon rts-icon" aria-hidden="true">R</span>
-            <p><strong>RTS FORECAST</strong><span>RTS rate × In Transit</span></p>
+
+          <label class="field field-wide">
+            <span>Item name <small>optional</small></span>
+            <input id="item" name="item" type="text" placeholder="Hal. Foldable storage box" autocomplete="off" />
+          </label>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>COD price</span>
+              <span class="input-wrap"><b>₱</b><input id="cod" name="cod" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>Order quantity</span>
+              <span class="input-wrap"><input id="order-qty" name="orderQty" type="number" min="1" step="1" inputmode="numeric" placeholder="0" required /><b>orders</b></span>
+            </label>
+            <label class="field">
+              <span>COG per item</span>
+              <span class="input-wrap"><b>₱</b><input id="cog" name="cog" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>Total ad spend</span>
+              <span class="input-wrap"><b>₱</b><input id="ad-spend" name="adSpend" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required /></span>
+            </label>
+            <label class="field">
+              <span>COD fee</span>
+              <span class="input-wrap"><input id="cod-fee" name="codFeePercent" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
+            </label>
+            <label class="field">
+              <span>RTS rate</span>
+              <span class="input-wrap"><input id="rts" name="rtsPercent" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="0" required /><b>%</b></span>
+            </label>
           </div>
-          <p class="grouping-note">
-            <strong>SMART PRODUCT GROUPING</strong>
-            <span>Offers, quantities, colors, sizes, and other variants roll up to the same item.</span>
+
+          <div class="fixed-assumptions" aria-label="Fixed workbook assumptions">
+            <p><span>₱40</span> base shipping fee / order</p>
+            <p><span>12%</span> VAT used by the workbook</p>
+          </div>
+
+          <div class="form-actions">
+            <p>Live ang result habang nagta-type ka.</p>
+            <button class="reset-button" id="reset-button" type="reset">I-reset lahat</button>
+          </div>
+        </form>
+
+        <aside class="result-card is-empty" id="result-card" aria-live="polite">
+          <div class="result-topline">
+            <span class="section-label">LIVE ESTIMATE</span>
+            <span class="status-chip" id="status-chip">Kumpletuhin ang inputs</span>
+          </div>
+          <p class="product-name" id="product-name">Your product</p>
+          <div class="hero-result">
+            <span>Estimated net income</span>
+            <strong id="net-income">₱—</strong>
+            <small id="net-caption">Ilagay ang anim na numbers para makita ang estimate.</small>
+          </div>
+
+          <div class="metric-grid">
+            <div><span>ROAS</span><strong id="roas">—</strong></div>
+            <div><span>CPP</span><strong id="cpp">₱—</strong></div>
+            <div><span>Delivered</span><strong id="delivered-orders">—</strong></div>
+            <div class="rts-metric"><span>RTS</span><strong id="rts-orders">—</strong></div>
+          </div>
+
+          <div class="breakdown">
+            <div class="breakdown-heading"><h3>Income breakdown</h3><span>Workbook logic</span></div>
+            <dl>
+              <div><dt>Gross receivable</dt><dd id="gross-receivable">₱—</dd></div>
+              <div><dt>Total COG</dt><dd id="total-cog">− ₱—</dd></div>
+              <div><dt>Ad spend</dt><dd id="ad-spend-output">− ₱—</dd></div>
+              <div><dt>VAT on ad spend</dt><dd id="vat">− ₱—</dd></div>
+              <div><dt>Base shipping fees</dt><dd id="base-sf">− ₱—</dd></div>
+              <div><dt>COD fee + 12% VAT</dt><dd id="cod-fee-output">− ₱—</dd></div>
+              <div class="subtotal-row"><dt>Net before RTS recovery</dt><dd id="net-before-rts">₱—</dd></div>
+              <div class="addback-row"><dt>RTS inventory add-back</dt><dd id="rts-addback">+ ₱—</dd></div>
+            </dl>
+          </div>
+
+          <p class="formula-note">
+            Final estimate = Net + COG value of returned inventory. Ito ay operational estimate,
+            hindi formal tax o accounting advice.
           </p>
-        </div>
+        </aside>
       </section>
 
-      <section class="results-section" id="results" hidden>
-        <div class="results-heading">
-          <div>
-            <span class="section-kicker">FORECAST REPORT</span>
-            <h2>Page performance</h2>
-            <p>Rates are based on completed orders: Delivered ÷ (Delivered + RTS).</p>
-          </div>
-          <div class="summary-cards" aria-label="Report summary">
-            <div><span>PAGES</span><strong id="sender-total">0</strong></div>
-            <div><span>PRODUCTS</span><strong id="product-total">0</strong></div>
-            <div><span>IN TRANSIT</span><strong id="transit-total">0</strong></div>
-          </div>
-        </div>
-
-        <div class="table-toolbar">
-          <label>
-            <span>Page</span>
-            <select id="sender-filter">
-              <option value="all">All page names</option>
-            </select>
-          </label>
-          <label class="search-field">
-            <span>Find product</span>
-            <input id="product-search" type="search" placeholder="Search product name" />
-          </label>
-          <p class="row-count" id="row-count">0 product rows</p>
-        </div>
-
-        <div class="table-shell">
-          <table>
-            <thead>
-              <tr>
-                <th>PAGE NAME</th>
-                <th>DELIVERED RATE</th>
-                <th class="rts-column">RTS RATE</th>
-                <th>DELIVERY FORECAST</th>
-                <th class="rts-column">RTS FORECAST</th>
-              </tr>
-            </thead>
-            <tbody id="results-body"></tbody>
-          </table>
-          <div class="no-results" id="no-results" hidden>No products match the current filters.</div>
-        </div>
+      <section class="upload-placeholder" id="upload-panel" data-panel="upload" hidden>
+        <div class="coming-icon" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="eyebrow"><span>02</span> COMING NEXT</p>
+        <h2>Upload Your Data Calculator</h2>
+        <p>
+          Dito natin ikakabit ang bulk calculator para sa maraming products gamit ang Excel o CSV.
+          Uunahin muna nating i-finalize ang quick calculator at formula behavior.
+        </p>
+        <ul>
+          <li>Multiple product rows</li>
+          <li>Automatic net income per item</li>
+          <li>Summary totals at export-ready results</li>
+        </ul>
+        <button class="back-button" type="button" data-view="quick">Bumalik sa Quick Calculator</button>
       </section>
-
-      <footer>
-        <strong>RTS CHECKER</strong>
-        <span>Private, browser-based order forecasting.</span>
-      </footer>
     </main>
+
+    <footer>
+      <div><strong>KitaKalkula</strong><span>Built for small PH e-commerce teams.</span></div>
+      <p>Formula based on <strong>calculator sample file.xlsx</strong></p>
+    </footer>
   </body>
 </html>
