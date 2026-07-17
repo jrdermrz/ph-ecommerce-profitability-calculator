@@ -364,9 +364,7 @@
   }
 
   const sync = {
-    productFile: document.getElementById("product-db-file"),
     dailyFile: document.getElementById("daily-data-file"),
-    productStatus: document.getElementById("product-db-status"),
     dailyStatus: document.getElementById("daily-data-status"),
     summary: document.getElementById("sync-summary"),
     status: document.getElementById("sync-status"),
@@ -384,7 +382,6 @@
     pageCount: document.getElementById("page-net-count"),
   };
   let sharedProductRecords = [];
-  let uploadedProductRecords = [];
   let dailyRows = [];
 
   function setFileStatus(element, message, type = "") {
@@ -456,11 +453,11 @@
   }
 
   function renderDataSync() {
-    const productRecords = [...sharedProductRecords, ...uploadedProductRecords];
+    const productRecords = sharedProductRecords;
     renderUnmatched([]);
 
     if (!productRecords.length) {
-      renderSyncEmpty("Product database needed", "Add shared product records or upload an RTS + COG master file.");
+      renderSyncEmpty("Database connection needed", "The Google Sheet product database connection is not active yet.");
       return;
     }
     if (!dailyRows.length) {
@@ -503,42 +500,11 @@
         payload = await response.json();
       }
       sharedProductRecords = parseProductRows(Array.isArray(payload.records) ? payload.records : []);
-      if (sharedProductRecords.length) {
-        setFileStatus(
-          sync.productStatus,
-          `${sharedProductRecords.length} shared product record${sharedProductRecords.length === 1 ? "" : "s"} loaded.`,
-          "ready",
-        );
-      } else {
-        setFileStatus(sync.productStatus, "Shared database is ready but currently has no product records.");
-      }
     } catch (error) {
-      setFileStatus(sync.productStatus, error.message, "error");
+      sharedProductRecords = [];
     }
     renderDataSync();
   }
-
-  sync.productFile.addEventListener("change", async () => {
-    const file = sync.productFile.files?.[0];
-    if (!file) return;
-    setFileStatus(sync.productStatus, "Reading product master…");
-    try {
-      uploadedProductRecords = parseProductRows(await workbookRows(file));
-      if (!uploadedProductRecords.length) {
-        throw new Error("No valid Effective Date, Item Name, RTS Rate, and COG rows were found.");
-      }
-      const latestCount = latestProductMap(uploadedProductRecords).size;
-      setFileStatus(
-        sync.productStatus,
-        `${file.name}: ${uploadedProductRecords.length} records, ${latestCount} latest items ready.`,
-        "ready",
-      );
-    } catch (error) {
-      uploadedProductRecords = [];
-      setFileStatus(sync.productStatus, error.message, "error");
-    }
-    renderDataSync();
-  });
 
   sync.dailyFile.addEventListener("change", async () => {
     const file = sync.dailyFile.files?.[0];

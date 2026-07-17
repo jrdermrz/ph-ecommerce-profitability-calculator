@@ -885,37 +885,6 @@ input::-webkit-inner-spin-button {
 
 .column-note strong { color: #b7c6bf; }
 
-.sync-rules-step {
-  padding-bottom: 2px;
-}
-
-.sync-fixed-rules {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.sync-fixed-rules p {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 12px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px 3px 10px 3px;
-  background: rgba(56, 215, 161, 0.06);
-}
-
-.sync-fixed-rules strong {
-  color: var(--green-bright);
-  font-size: 15px;
-}
-
-.sync-fixed-rules span {
-  color: var(--muted);
-  font-size: 8px;
-  font-weight: 750;
-}
-
 .sync-summary {
   position: sticky;
   top: 18px;
@@ -1183,7 +1152,6 @@ input:focus-visible {
     flex-direction: column;
   }
 
-  .sync-fixed-rules,
   .sync-totals {
     grid-template-columns: 1fr;
   }

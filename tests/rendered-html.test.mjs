@@ -41,9 +41,8 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(html, /Projected net with RTS/);
   assert.match(html, /Net Ratio/);
   assert.match(html, /NET PER PAGE/);
-  assert.match(html, /Fixed calculation rules/);
-  assert.match(html, /Shipping per order/);
-  assert.match(html, /₱37\.50/);
+  assert.doesNotMatch(html, /Product master database|Upload RTS \+ COG master|Fixed calculation rules|Shipping per order/);
+  assert.doesNotMatch(html, /id="product-db-file"|id="product-db-status"/);
   assert.doesNotMatch(html, /id="sync-cod-fee"|id="sync-shipping-fee"/);
   assert.match(html, /https:\/\/ph-ecommerce-profitability-calculator\.example\/og\.png/);
   assert.doesNotMatch(html, /__SITE_ORIGIN__|RTS CHECKER|FulfilRate|KitaKalkula|Item name|QUICK PROFIT CHECK|I-compute ang kita/);
