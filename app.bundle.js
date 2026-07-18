@@ -182,13 +182,7 @@
     const pages = new Map();
     const unmatched = new Map();
     const matchedItemKeys = new Set();
-    const totals = {
-      adSpend: 0,
-      orders: 0,
-      netWithoutRts: 0,
-      netWithRts: 0,
-      matchedRows: 0,
-    };
+    let matchedRows = 0;
 
     for (const row of dailyRows) {
       const product = products.get(row.itemKey);
@@ -220,11 +214,7 @@
       page.netWithRts += result.netIncome;
       pages.set(row.pageName, page);
 
-      totals.orders += result.orderQty;
-      totals.adSpend += result.adSpend;
-      totals.netWithoutRts += result.netBeforeRts;
-      totals.netWithRts += result.netIncome;
-      totals.matchedRows += 1;
+      matchedRows += 1;
       matchedItemKeys.add(row.itemKey);
     }
 
@@ -232,11 +222,20 @@
       .map((page) => ({
         ...page,
         netRatio: page.adSpend > 0 ? page.netWithoutRts / page.adSpend : null,
-      }))
-      .sort((a, b) => b.netWithoutRts - a.netWithoutRts || a.pageName.localeCompare(b.pageName));
+      }));
+    const totals = pageResults.reduce(
+      (sum, page) => ({
+        adSpend: sum.adSpend + page.adSpend,
+        orders: sum.orders + page.orders,
+        netWithoutRts: sum.netWithoutRts + page.netWithoutRts,
+        netWithRts: sum.netWithRts + page.netWithRts,
+      }),
+      { adSpend: 0, orders: 0, netWithoutRts: 0, netWithRts: 0 },
+    );
 
     return {
       ...totals,
+      matchedRows,
       matchedItems: matchedItemKeys.size,
       unmatchedItems: Array.from(unmatched.values()).sort((a, b) => a.localeCompare(b)),
       netRatio: totals.adSpend > 0 ? totals.netWithoutRts / totals.adSpend : null,
