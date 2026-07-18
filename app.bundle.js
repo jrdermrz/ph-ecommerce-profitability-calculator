@@ -177,6 +177,13 @@
     return latest;
   }
 
+  function profitabilityTone(net, netRatio) {
+    if (!Number.isFinite(net)) return "neutral";
+    if (net < 0) return "negative";
+    if (Number.isFinite(netRatio) && netRatio >= 0 && netRatio <= 0.05) return "break-even";
+    return "positive";
+  }
+
   function calculateDataSync(dailyRows, productRecords, settings) {
     const products = latestProductMap(productRecords);
     const pages = new Map();
@@ -275,6 +282,7 @@
     parseDailyRows,
     latestProductMap,
     calculateDataSync,
+    profitabilityTone,
   };
 
   if (typeof document === "undefined") return;
@@ -409,6 +417,7 @@
     totalAdSpend: document.getElementById("sync-total-ad-spend"),
     totalOrders: document.getElementById("sync-total-orders"),
     matchedItems: document.getElementById("sync-matched-items"),
+    shippingFee: document.getElementById("sync-shipping-fee-note"),
     unmatchedCard: document.getElementById("unmatched-card"),
     unmatchedList: document.getElementById("unmatched-list"),
     pageSection: document.getElementById("page-net-section"),
@@ -441,16 +450,18 @@
   }
 
   function renderSyncEmpty(status, caption) {
-    sync.summary.classList.remove("is-positive", "is-negative");
+    sync.summary.classList.remove("is-positive", "is-negative", "is-break-even");
     sync.summary.classList.add("is-empty");
     sync.status.textContent = status;
     sync.netWithoutRts.textContent = "₱—";
     sync.netWithRts.textContent = "₱—";
+    sync.netWithRts.classList.remove("result-positive", "result-negative", "result-break-even");
     sync.netRatio.textContent = "1:—";
     sync.caption.textContent = caption;
     sync.totalAdSpend.textContent = "₱—";
     sync.totalOrders.textContent = "—";
     sync.matchedItems.textContent = "—";
+    sync.shippingFee.textContent = `${money(DATA_SYNC_SETTINGS.shippingFee)}/order`;
     sync.pageSection.hidden = true;
   }
 
@@ -485,11 +496,17 @@
         money(page.codFee),
         money(page.netWithoutRts),
         ratioText(page.netRatio),
-        money(page.rtsInventoryCog),
+        money(page.netWithRts),
       ];
-      for (const value of values) {
+      for (const [index, value] of values.entries()) {
         const cell = document.createElement("td");
         cell.textContent = value;
+        if (index < 2) cell.title = value;
+        if (index === 14) cell.classList.add(`result-${profitabilityTone(page.netWithoutRts, page.netRatio)}`);
+        if (index === 16) {
+          const withRtsRatio = page.adSpend > 0 ? page.netWithRts / page.adSpend : null;
+          cell.classList.add(`result-${profitabilityTone(page.netWithRts, withRtsRatio)}`);
+        }
         row.append(cell);
       }
       sync.pageBody.append(row);
@@ -511,19 +528,23 @@
       return;
     }
 
-    const isPositive = result.netWithoutRts >= 0;
-    sync.summary.classList.remove("is-empty", "is-positive", "is-negative");
-    sync.summary.classList.add(isPositive ? "is-positive" : "is-negative");
+    const tone = profitabilityTone(result.netWithoutRts, result.netRatio);
+    sync.summary.classList.remove("is-empty", "is-positive", "is-negative", "is-break-even");
+    sync.summary.classList.add(`is-${tone}`);
     sync.status.textContent = result.unmatchedItems.length
       ? `Review ${result.unmatchedItems.length} unmatched item${result.unmatchedItems.length === 1 ? "" : "s"}`
-      : isPositive ? "Positive projection" : "Projected loss";
+      : tone === "negative" ? "Projected loss" : tone === "break-even" ? "Break-even range" : "Positive projection";
     sync.netWithoutRts.textContent = money(result.netWithoutRts);
     sync.netWithRts.textContent = money(result.netWithRts);
+    sync.netWithRts.classList.remove("result-positive", "result-negative", "result-break-even");
+    const withRtsRatio = result.adSpend > 0 ? result.netWithRts / result.adSpend : null;
+    sync.netWithRts.classList.add(`result-${profitabilityTone(result.netWithRts, withRtsRatio)}`);
     sync.netRatio.textContent = ratioText(result.netRatio);
     sync.caption.textContent = `${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} saved; ${result.matchedRows} matched to the product database.`;
     sync.totalAdSpend.textContent = money(result.adSpend);
     sync.totalOrders.textContent = integer.format(result.orders);
     sync.matchedItems.textContent = integer.format(result.matchedItems);
+    sync.shippingFee.textContent = `${money(DATA_SYNC_SETTINGS.shippingFee)}/order`;
     renderPageResults(result.pages);
   }
 
@@ -594,7 +615,27 @@
     }
     if (view === "quick") renderQuickCalculator();
     if (view === "upload") renderDataSync();
+    document.getElementById("privacy-pill-text").textContent = view === "quick"
+      ? "No data shall be saved"
+      : "Uploads saved for reporting";
   }
+
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeLabel = document.getElementById("theme-label");
+  const themeIcon = document.getElementById("theme-icon");
+
+  function setTheme(theme) {
+    const isLight = theme === "light";
+    document.documentElement.dataset.theme = isLight ? "light" : "dark";
+    themeToggle.setAttribute("aria-pressed", String(isLight));
+    themeToggle.setAttribute("aria-label", `Switch to ${isLight ? "dark" : "light"} mode`);
+    themeLabel.textContent = isLight ? "Dark mode" : "Light mode";
+    themeIcon.textContent = isLight ? "☾" : "☀";
+  }
+
+  themeToggle.addEventListener("click", () => {
+    setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+  });
 
   for (const input of Object.values(inputs)) input.addEventListener("input", renderQuickCalculator);
   for (const button of document.querySelectorAll("[data-view]")) {
@@ -613,6 +654,7 @@
   });
 
   form.addEventListener("reset", () => window.setTimeout(renderQuickCalculator, 0));
+  setTheme("dark");
   renderQuickCalculator();
   renderDataSync();
 })();
