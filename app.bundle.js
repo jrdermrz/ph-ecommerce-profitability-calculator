@@ -3,6 +3,7 @@
 
   const VAT_RATE = 0.12;
   const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 37.5 });
+  const DATA_SYNC_API_URL = "https://fulfilrate-forecast.jrderamirez21.chatgpt.site";
 
   function finiteNumber(value, fallback = 0) {
     const parsed = Number(value);
@@ -143,9 +144,14 @@
           pageName,
           itemName,
           itemKey: normaliseItemName(itemName),
+          adAccount: String(rowValue(row, ["adaccount", "account"])).trim(),
+          cpp: parseAmount(rowValue(row, ["cpp", "costperpurchase"])),
+          cpm: String(rowValue(row, ["cpm"])).trim(),
           cod: parseAmount(rowValue(row, ["cod", "codprice", "sellingprice"])),
           adSpend: parseAmount(rowValue(row, ["adspent", "adspend", "amountspent"])),
           orderQty: Math.floor(parseAmount(rowValue(row, ["orders", "orderquantity", "orderqty"]))),
+          budget: parseAmount(rowValue(row, ["budget"])),
+          spentPercent: parsePercent(rowValue(row, ["percentspent", "spentpercent", "spent"])),
         };
       })
       .filter(
@@ -381,8 +387,9 @@
     pageBody: document.getElementById("page-net-body"),
     pageCount: document.getElementById("page-net-count"),
   };
-  let sharedProductRecords = [];
   let dailyRows = [];
+  let latestSyncResult = null;
+  let syncRequestSequence = 0;
 
   function setFileStatus(element, message, type = "") {
     element.textContent = message;
@@ -452,58 +459,70 @@
     sync.pageSection.hidden = pages.length === 0;
   }
 
-  function renderDataSync() {
-    const productRecords = sharedProductRecords;
-    renderUnmatched([]);
-
-    if (!productRecords.length) {
-      renderSyncEmpty("Database connection needed", "The Google Sheet product database connection is not active yet.");
-      return;
-    }
-    if (!dailyRows.length) {
-      renderSyncEmpty("Daily data needed", "Upload the daily performance file shown in your workflow.");
-      return;
-    }
-    const result = calculateDataSync(dailyRows, productRecords, DATA_SYNC_SETTINGS);
+  function renderDataSyncResult(result) {
     renderUnmatched(result.unmatchedItems);
     sync.matchedItems.textContent = integer.format(result.matchedItems);
 
-    if (result.unmatchedItems.length) {
+    if (!result.matchedRows) {
       renderSyncEmpty(
-        `${result.unmatchedItems.length} unmatched item${result.unmatchedItems.length === 1 ? "" : "s"}`,
-        "Results stay locked until every Item Name has a matching RTS rate and COG record.",
+        "No matched products",
+        "The uploaded rows were saved, but none matched an Item Name in the product database.",
       );
-      sync.matchedItems.textContent = integer.format(result.matchedItems);
+      renderUnmatched(result.unmatchedItems);
       return;
     }
 
     const isPositive = result.netWithoutRts >= 0;
     sync.summary.classList.remove("is-empty", "is-positive", "is-negative");
     sync.summary.classList.add(isPositive ? "is-positive" : "is-negative");
-    sync.status.textContent = isPositive ? "Positive projection" : "Projected loss";
+    sync.status.textContent = result.unmatchedItems.length
+      ? `Review ${result.unmatchedItems.length} unmatched item${result.unmatchedItems.length === 1 ? "" : "s"}`
+      : isPositive ? "Positive projection" : "Projected loss";
     sync.netWithoutRts.textContent = money(result.netWithoutRts);
     sync.netWithRts.textContent = money(result.netWithRts);
     sync.netRatio.textContent = ratioText(result.netRatio);
-    sync.caption.textContent = `${result.matchedRows} daily row${result.matchedRows === 1 ? "" : "s"} matched to the latest product records.`;
+    sync.caption.textContent = `${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} saved; ${result.matchedRows} matched to the product database.`;
     sync.totalAdSpend.textContent = money(result.adSpend);
     sync.totalOrders.textContent = integer.format(result.orders);
     sync.matchedItems.textContent = integer.format(result.matchedItems);
     renderPageResults(result.pages);
   }
 
-  async function loadSharedProducts() {
-    try {
-      let payload = window.__PRODUCT_MASTER__;
-      if (!payload) {
-        const response = await fetch("./data/product-master.json", { cache: "no-store" });
-        if (!response.ok) throw new Error("Shared product database could not be loaded.");
-        payload = await response.json();
-      }
-      sharedProductRecords = parseProductRows(Array.isArray(payload.records) ? payload.records : []);
-    } catch (error) {
-      sharedProductRecords = [];
+  function renderDataSync() {
+    if (latestSyncResult) {
+      renderDataSyncResult(latestSyncResult);
+      return;
     }
+    renderUnmatched([]);
+    if (!dailyRows.length) {
+      renderSyncEmpty("Daily data needed", "Upload the daily performance file shown in your workflow.");
+      return;
+    }
+    renderSyncEmpty("Computing…", "Saving the uploaded rows and matching Item Names with the product database.");
+  }
+
+  async function submitDailyData(fileName) {
+    const requestId = ++syncRequestSequence;
+    latestSyncResult = null;
     renderDataSync();
+    try {
+      const response = await fetch(`${DATA_SYNC_API_URL}/api/data-sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName, rows: dailyRows }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "The database could not process this file.");
+      if (requestId !== syncRequestSequence) return;
+      latestSyncResult = payload;
+      setFileStatus(sync.dailyStatus, `${fileName}: ${payload.storedRows} daily rows saved and computed.`, "ready");
+      renderDataSyncResult(payload);
+    } catch (error) {
+      if (requestId !== syncRequestSequence) return;
+      latestSyncResult = null;
+      setFileStatus(sync.dailyStatus, error.message, "error");
+      renderSyncEmpty("Database unavailable", error.message);
+    }
   }
 
   sync.dailyFile.addEventListener("change", async () => {
@@ -515,16 +534,14 @@
       if (!dailyRows.length) {
         throw new Error("No valid Page Name, Item Name, COD, Adspent, and Orders rows were found.");
       }
-      setFileStatus(
-        sync.dailyStatus,
-        `${file.name}: ${dailyRows.length} daily row${dailyRows.length === 1 ? "" : "s"} ready.`,
-        "ready",
-      );
+      setFileStatus(sync.dailyStatus, `${file.name}: saving ${dailyRows.length} daily rows…`);
+      await submitDailyData(file.name);
     } catch (error) {
       dailyRows = [];
+      latestSyncResult = null;
       setFileStatus(sync.dailyStatus, error.message, "error");
+      renderDataSync();
     }
-    renderDataSync();
   });
 
   function showView(view) {
@@ -558,5 +575,5 @@
 
   form.addEventListener("reset", () => window.setTimeout(renderQuickCalculator, 0));
   renderQuickCalculator();
-  void loadSharedProducts();
+  renderDataSync();
 })();
