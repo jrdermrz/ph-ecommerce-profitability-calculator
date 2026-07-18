@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784409166220,
+      "tag": "0000_sharp_namorita",
+      "breakpoints": true
+    }
+  ]
 }

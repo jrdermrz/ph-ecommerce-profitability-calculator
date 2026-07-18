@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
+import {
+  calculateDataSync as calculateBackendDataSync,
+  normaliseItemName as normaliseBackendItemName,
+  validateDailyRows,
+} from "../worker/profitability.ts";
 
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -143,6 +148,35 @@ test("data sync uses fixed fees, matches the latest product record, and calculat
   assert.ok(Math.abs(result.pages[0].netRatio - 4.4154) < 1e-9);
 });
 
+test("backend validates uploaded rows and computes without exposing product costs", () => {
+  const daily = validateDailyRows([
+    {
+      date: "2026-07-18",
+      pageName: "Luxe Kitchenware",
+      itemName: "Gold Utensils",
+      adAccount: "Alexandrite",
+      cod: 1000,
+      adSpend: 10000,
+      orderQty: 100,
+    },
+  ]);
+  const result = calculateBackendDataSync(daily, [
+    {
+      itemName: "GOLD UTENSILS",
+      itemKey: normaliseBackendItemName("GOLD UTENSILS"),
+      effectiveDate: "2026-07-18",
+      rtsRate: 20,
+      cog: 200,
+    },
+  ]);
+
+  assert.equal(daily.length, 1);
+  assert.equal(result.unmatchedItems.length, 0);
+  assert.ok(Math.abs(result.netWithoutRts - 44154) < 1e-9);
+  assert.ok(Math.abs(result.netWithRts - 48154) < 1e-9);
+  assert.ok(Math.abs(result.netRatio - 4.4154) < 1e-9);
+});
+
 test("packages standalone and GitHub Pages quick calculators", async () => {
   const [offline, html, bundle] = await Promise.all([
     readFile(
@@ -156,7 +190,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260718-3" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260718-4" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);
