@@ -46,6 +46,10 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(html, /Projected net with RTS/);
   assert.match(html, /Net Ratio/);
   assert.match(html, /NET PER PAGE/);
+  assert.match(html, /id="theme-toggle"/);
+  assert.match(html, /No data shall be saved/);
+  assert.match(html, /Base shipping fee used/);
+  assert.match(html, /<th>Net with RTS<\/th>/);
   assert.doesNotMatch(html, /Product master database|Upload RTS \+ COG master|Fixed calculation rules|Shipping per order/);
   assert.doesNotMatch(html, /id="product-db-file"|id="product-db-status"/);
   assert.doesNotMatch(html, /id="sync-cod-fee"|id="sync-shipping-fee"/);
@@ -56,6 +60,10 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.deepEqual(inputOrder, [...inputOrder].sort((a, b) => a - b));
   assert.match(css, /color-scheme:\s*dark/i);
   assert.match(css, /--paper:\s*#07100d/i);
+  assert.match(css, /:root\[data-theme="light"\]/);
+  assert.match(css, /\.data-sync-panel\s*\{[^}]*width:\s*calc\(100% - 24px\)/s);
+  assert.match(css, /\.page-net-table-wrap\s*\{\s*overflow-x:\s*hidden/);
+  assert.match(css, /\.page-net-table\s*\{[^}]*table-layout:\s*fixed/s);
   assert.match(app, /outputs\.netIncome\.textContent = money\(result\.netBeforeRts\)/);
   assert.match(app, /outputs\.netIncludingRts\.textContent = money\(result\.netIncome\)/);
 });
@@ -208,6 +216,18 @@ test("Data Sync matches the supplied Luxe Kitchenware reference row", () => {
   assert.ok(Math.abs(page.netWithRts - 2023.6224) < 1e-9);
 });
 
+test("Data Sync applies red, green, and break-even result tones", async () => {
+  const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const sandbox = { window: {} };
+  runInNewContext(source, sandbox);
+  const { profitabilityTone } = sandbox.window.DataSyncCalculator;
+
+  assert.equal(profitabilityTone(-0.01, -0.001), "negative");
+  assert.equal(profitabilityTone(0, 0), "break-even");
+  assert.equal(profitabilityTone(50, 0.05), "break-even");
+  assert.equal(profitabilityTone(50.01, 0.05001), "positive");
+});
+
 test("data sync preserves upload order and derives totals from the page breakdown", async () => {
   const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   const sandbox = { window: {} };
@@ -260,7 +280,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-2" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-3" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);

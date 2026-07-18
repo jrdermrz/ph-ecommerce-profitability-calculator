@@ -30,7 +30,12 @@
           <small>Local E-commerce Calculator</small>
         </span>
       </a>
-      <span class="local-pill"><span aria-hidden="true"></span>Private on your device</span>
+      <div class="header-actions">
+        <span class="local-pill"><span aria-hidden="true"></span><b id="privacy-pill-text">No data shall be saved</b></span>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to light mode">
+          <span aria-hidden="true" id="theme-icon">☀</span><b id="theme-label">Light mode</b>
+        </button>
+      </div>
     </header>
 
     <main id="top">
@@ -179,6 +184,7 @@
               <div><dt>Total ad spend</dt><dd id="sync-total-ad-spend">₱—</dd></div>
               <div><dt>Total orders</dt><dd id="sync-total-orders">—</dd></div>
               <div><dt>Matched items</dt><dd id="sync-matched-items">—</dd></div>
+              <div><dt>Base shipping fee used</dt><dd id="sync-shipping-fee-note">₱41.00/order</dd></div>
             </dl>
           </aside>
         </div>
@@ -192,7 +198,7 @@
           <div class="page-net-heading"><div><span class="section-label">NET PER PAGE</span><h3>Projected profitability by page</h3></div><p id="page-net-count"></p></div>
           <div class="page-net-table-wrap">
             <table class="page-net-table">
-              <thead><tr><th>Page name</th><th>Item</th><th>COD</th><th>COD fee %</th><th>% RTS</th><th>COG</th><th>Adspent</th><th>ROAS</th><th>Orders</th><th>Gross receivable</th><th>VAT</th><th>Total COG</th><th>Base SF</th><th>COD fee</th><th>Net</th><th>Net Ratio</th><th>RTS inventory COG</th></tr></thead>
+              <thead><tr><th>Page name</th><th>Item</th><th>COD</th><th>COD fee %</th><th>% RTS</th><th>COG</th><th>Adspent</th><th>ROAS</th><th>Orders</th><th>Gross receivable</th><th>VAT</th><th>Total COG</th><th>Base SF</th><th>COD fee</th><th>Net</th><th>Net Ratio</th><th>Net with RTS</th></tr></thead>
               <tbody id="page-net-body"></tbody>
             </table>
           </div>
