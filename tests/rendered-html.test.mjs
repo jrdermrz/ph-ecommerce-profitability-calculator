@@ -177,6 +177,45 @@ test("backend validates uploaded rows and computes without exposing product cost
   assert.ok(Math.abs(result.netRatio - 4.4154) < 1e-9);
 });
 
+test("data sync preserves upload order and derives totals from the page breakdown", async () => {
+  const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const sandbox = { window: {} };
+  runInNewContext(source, sandbox);
+  const { DATA_SYNC_SETTINGS, parseProductRows, parseDailyRows, calculateDataSync } = sandbox.window.DataSyncCalculator;
+  const rawProducts = [
+    { "Item Name": "First Product", "RTS Rate": "40%", COG: 180 },
+    { "Item Name": "Second Product", "RTS Rate": "5%", COG: 50 },
+    { "Item Name": "Third Product", "RTS Rate": "20%", COG: 100 },
+  ];
+  const rawDaily = [
+    { "Page Name": "First Uploaded Page", "Item Name": "First Product", COD: 179, ADSPENT: 5000, Orders: 20 },
+    { "Page Name": "Second Uploaded Page", "Item Name": "Second Product", COD: 299, ADSPENT: 500, Orders: 50 },
+    { "Page Name": "First Uploaded Page", "Item Name": "Third Product", COD: 199, ADSPENT: 300, Orders: 10 },
+  ];
+  const frontendResult = calculateDataSync(parseDailyRows(rawDaily), parseProductRows(rawProducts), DATA_SYNC_SETTINGS);
+  const backendResult = calculateBackendDataSync(validateDailyRows(rawDaily.map((row) => ({
+    pageName: row["Page Name"],
+    itemName: row["Item Name"],
+    cod: row.COD,
+    adSpend: row.ADSPENT,
+    orderQty: row.Orders,
+  }))), rawProducts.map((row) => ({
+    itemName: row["Item Name"],
+    itemKey: normaliseBackendItemName(row["Item Name"]),
+    effectiveDate: "2026-07-19",
+    rtsRate: Number.parseFloat(row["RTS Rate"]),
+    cog: row.COG,
+  })));
+
+  for (const result of [frontendResult, backendResult]) {
+    assert.deepEqual(Array.from(result.pages, (page) => page.pageName), ["First Uploaded Page", "Second Uploaded Page"]);
+    assert.ok(Math.abs(result.netWithoutRts - result.pages.reduce((sum, page) => sum + page.netWithoutRts, 0)) < 1e-9);
+    assert.ok(Math.abs(result.netWithRts - result.pages.reduce((sum, page) => sum + page.netWithRts, 0)) < 1e-9);
+    assert.equal(result.orders, result.pages.reduce((sum, page) => sum + page.orders, 0));
+    assert.equal(result.adSpend, result.pages.reduce((sum, page) => sum + page.adSpend, 0));
+  }
+});
+
 test("packages standalone and GitHub Pages quick calculators", async () => {
   const [offline, html, bundle] = await Promise.all([
     readFile(
@@ -190,7 +229,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260718-4" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-1" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);

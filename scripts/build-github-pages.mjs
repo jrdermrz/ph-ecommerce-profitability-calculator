@@ -15,7 +15,7 @@ html = html
   .replace('<link rel="stylesheet" href="./app.css" />', `<style>${css}</style>`)
   .replace(
     /\s*<script src="\.\/app\.js" defer><\/script>/,
-    '\n    <script src="./app.bundle.js?v=20260718-4" defer></script>',
+    '\n    <script src="./app.bundle.js?v=20260719-1" defer></script>',
   );
 
 await mkdir(outputRoot, { recursive: true });

@@ -103,7 +103,7 @@ export function calculateDataSync(dailyRows: DailyRow[], productRecords: Product
   const unmatched = new Map<string, string>();
   const matchedItemKeys = new Set<string>();
   const rowResults: Array<{ row: DailyRow; product: ProductRecord | null; netWithoutRts: number | null; netWithRts: number | null }> = [];
-  const totals = { adSpend: 0, orders: 0, netWithoutRts: 0, netWithRts: 0, matchedRows: 0 };
+  let matchedRows = 0;
 
   for (const row of dailyRows) {
     const product = products.get(row.itemKey) ?? null;
@@ -119,18 +119,29 @@ export function calculateDataSync(dailyRows: DailyRow[], productRecords: Product
     page.netWithoutRts += result.netBeforeRts;
     page.netWithRts += result.netIncome;
     pages.set(row.pageName, page);
-    totals.orders += result.orderQty;
-    totals.adSpend += result.adSpend;
-    totals.netWithoutRts += result.netBeforeRts;
-    totals.netWithRts += result.netIncome;
-    totals.matchedRows += 1;
+    matchedRows += 1;
     matchedItemKeys.add(row.itemKey);
     rowResults.push({ row, product, netWithoutRts: result.netBeforeRts, netWithRts: result.netIncome });
   }
 
-  const pageResults = Array.from(pages.values()).map((page) => ({ ...page, netRatio: page.adSpend > 0 ? page.netWithoutRts / page.adSpend : null })).sort((a, b) => b.netWithoutRts - a.netWithoutRts || a.pageName.localeCompare(b.pageName));
+  // Map keeps the first-seen insertion order, so the breakdown mirrors the upload.
+  const pageResults = Array.from(pages.values()).map((page) => ({
+    ...page,
+    netRatio: page.adSpend > 0 ? page.netWithoutRts / page.adSpend : null,
+  }));
+  // Headline results are deliberately the sum of the visible per-page breakdown.
+  const totals = pageResults.reduce(
+    (sum, page) => ({
+      adSpend: sum.adSpend + page.adSpend,
+      orders: sum.orders + page.orders,
+      netWithoutRts: sum.netWithoutRts + page.netWithoutRts,
+      netWithRts: sum.netWithRts + page.netWithRts,
+    }),
+    { adSpend: 0, orders: 0, netWithoutRts: 0, netWithRts: 0 },
+  );
   return {
     ...totals,
+    matchedRows,
     matchedItems: matchedItemKeys.size,
     unmatchedItems: Array.from(unmatched.values()).sort((a, b) => a.localeCompare(b)),
     netRatio: totals.adSpend > 0 ? totals.netWithoutRts / totals.adSpend : null,
