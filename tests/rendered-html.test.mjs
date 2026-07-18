@@ -156,7 +156,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260718-3" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);
