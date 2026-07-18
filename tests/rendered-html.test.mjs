@@ -62,8 +62,10 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(css, /--paper:\s*#07100d/i);
   assert.match(css, /:root\[data-theme="light"\]/);
   assert.match(css, /\.data-sync-panel\s*\{[^}]*width:\s*calc\(100% - 24px\)/s);
+  assert.match(css, /\.sync-workspace\s*\{[^}]*width:\s*min\(100%, 1240px\)/s);
   assert.match(css, /\.page-net-table-wrap\s*\{\s*overflow-x:\s*hidden/);
   assert.match(css, /\.page-net-table\s*\{[^}]*table-layout:\s*fixed/s);
+  assert.match(css, /\.page-net-table td\s*\{[^}]*font-size:\s*clamp\(11px, 0\.72vw, 14px\)/s);
   assert.match(app, /outputs\.netIncome\.textContent = money\(result\.netBeforeRts\)/);
   assert.match(app, /outputs\.netIncludingRts\.textContent = money\(result\.netIncome\)/);
 });
@@ -280,7 +282,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-3" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-4" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);
