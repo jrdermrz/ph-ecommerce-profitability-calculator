@@ -1,5 +1,5 @@
 export const VAT_RATE = 0.12;
-export const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 37.5 });
+export const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 41 });
 
 export type DailyRow = {
   date: string;
@@ -67,8 +67,28 @@ export function computeNetIncome(rawInputs: {
   const baseShippingFees = shippingFee * orderQty;
   const codFee = deliveredOrders * ((codFeePercent / 100) * cod) * (1 + VAT_RATE);
   const netBeforeRts = grossReceivable - totalCog - vat - baseShippingFees - codFee - adSpend;
-  const netIncome = netBeforeRts + rtsOrders * cog;
-  return { orderQty, adSpend, netBeforeRts, netIncome };
+  const rtsInventoryAddBack = rtsOrders * cog;
+  const netIncome = netBeforeRts + rtsInventoryAddBack;
+  const roas = adSpend > 0 ? (cod * orderQty) / adSpend : null;
+  return {
+    cod,
+    codFeePercent,
+    rtsPercent,
+    cog,
+    orderQty,
+    adSpend,
+    deliveredOrders,
+    rtsOrders,
+    roas,
+    grossReceivable,
+    vat,
+    totalCog,
+    baseShippingFees,
+    codFee,
+    netBeforeRts,
+    rtsInventoryAddBack,
+    netIncome,
+  };
 }
 
 export function validateDailyRows(value: unknown): DailyRow[] {
@@ -99,7 +119,25 @@ export function validateDailyRows(value: unknown): DailyRow[] {
 
 export function calculateDataSync(dailyRows: DailyRow[], productRecords: ProductRecord[]) {
   const products = new Map(productRecords.map((product) => [product.itemKey, product]));
-  const pages = new Map<string, { pageName: string; orders: number; adSpend: number; netWithoutRts: number; netWithRts: number }>();
+  const pages = new Map<string, {
+    pageName: string;
+    itemName: string;
+    cod: number | null;
+    codFeePercent: number;
+    rtsRate: number | null;
+    cog: number | null;
+    orders: number;
+    adSpend: number;
+    potentialRevenue: number;
+    grossReceivable: number;
+    vat: number;
+    totalCog: number;
+    baseShippingFees: number;
+    codFee: number;
+    rtsInventoryCog: number;
+    netWithoutRts: number;
+    netWithRts: number;
+  }>();
   const unmatched = new Map<string, string>();
   const matchedItemKeys = new Set<string>();
   const rowResults: Array<{ row: DailyRow; product: ProductRecord | null; netWithoutRts: number | null; netWithRts: number | null }> = [];
@@ -113,9 +151,38 @@ export function calculateDataSync(dailyRows: DailyRow[], productRecords: Product
       continue;
     }
     const result = computeNetIncome({ cod: row.cod, codFeePercent: DATA_SYNC_SETTINGS.codFeePercent, rtsPercent: product.rtsRate, cog: product.cog, adSpend: row.adSpend, orderQty: row.orderQty, shippingFee: DATA_SYNC_SETTINGS.shippingFee });
-    const page = pages.get(row.pageName) ?? { pageName: row.pageName, orders: 0, adSpend: 0, netWithoutRts: 0, netWithRts: 0 };
+    const page = pages.get(row.pageName) ?? {
+      pageName: row.pageName,
+      itemName: product.itemName,
+      cod: row.cod,
+      codFeePercent: DATA_SYNC_SETTINGS.codFeePercent,
+      rtsRate: product.rtsRate,
+      cog: product.cog,
+      orders: 0,
+      adSpend: 0,
+      potentialRevenue: 0,
+      grossReceivable: 0,
+      vat: 0,
+      totalCog: 0,
+      baseShippingFees: 0,
+      codFee: 0,
+      rtsInventoryCog: 0,
+      netWithoutRts: 0,
+      netWithRts: 0,
+    };
+    if (page.itemName !== product.itemName) page.itemName = "Multiple items";
+    if (page.cod !== row.cod) page.cod = null;
+    if (page.rtsRate !== product.rtsRate) page.rtsRate = null;
+    if (page.cog !== product.cog) page.cog = null;
     page.orders += result.orderQty;
     page.adSpend += result.adSpend;
+    page.potentialRevenue += result.cod * result.orderQty;
+    page.grossReceivable += result.grossReceivable;
+    page.vat += result.vat;
+    page.totalCog += result.totalCog;
+    page.baseShippingFees += result.baseShippingFees;
+    page.codFee += result.codFee;
+    page.rtsInventoryCog += result.rtsInventoryAddBack;
     page.netWithoutRts += result.netBeforeRts;
     page.netWithRts += result.netIncome;
     pages.set(row.pageName, page);
@@ -127,6 +194,7 @@ export function calculateDataSync(dailyRows: DailyRow[], productRecords: Product
   // Map keeps the first-seen insertion order, so the breakdown mirrors the upload.
   const pageResults = Array.from(pages.values()).map((page) => ({
     ...page,
+    roas: page.adSpend > 0 ? page.potentialRevenue / page.adSpend : null,
     netRatio: page.adSpend > 0 ? page.netWithoutRts / page.adSpend : null,
   }));
   // Headline results are deliberately the sum of the visible per-page breakdown.

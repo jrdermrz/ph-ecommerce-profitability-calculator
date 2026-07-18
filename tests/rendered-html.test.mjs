@@ -140,15 +140,15 @@ test("data sync uses fixed fees, matches the latest product record, and calculat
   assert.equal(result.unmatchedItems.length, 0);
   assert.equal(result.matchedItems, 1);
   assert.equal(DATA_SYNC_SETTINGS.codFeePercent, 1);
-  assert.equal(DATA_SYNC_SETTINGS.shippingFee, 37.5);
-  assert.ok(Math.abs(result.netWithoutRts - 44154) < 1e-9);
-  assert.ok(Math.abs(result.netWithRts - 48154) < 1e-9);
-  assert.ok(Math.abs(result.netRatio - 4.4154) < 1e-9);
+  assert.equal(DATA_SYNC_SETTINGS.shippingFee, 41);
+  assert.ok(Math.abs(result.netWithoutRts - 43804) < 1e-9);
+  assert.ok(Math.abs(result.netWithRts - 47804) < 1e-9);
+  assert.ok(Math.abs(result.netRatio - 4.3804) < 1e-9);
   assert.equal(result.pages[0].pageName, "Luxe Kitchenware");
-  assert.ok(Math.abs(result.pages[0].netRatio - 4.4154) < 1e-9);
+  assert.ok(Math.abs(result.pages[0].netRatio - 4.3804) < 1e-9);
 });
 
-test("backend validates uploaded rows and computes without exposing product costs", () => {
+test("backend validates uploaded rows and returns the spreadsheet breakdown", () => {
   const daily = validateDailyRows([
     {
       date: "2026-07-18",
@@ -172,9 +172,40 @@ test("backend validates uploaded rows and computes without exposing product cost
 
   assert.equal(daily.length, 1);
   assert.equal(result.unmatchedItems.length, 0);
-  assert.ok(Math.abs(result.netWithoutRts - 44154) < 1e-9);
-  assert.ok(Math.abs(result.netWithRts - 48154) < 1e-9);
-  assert.ok(Math.abs(result.netRatio - 4.4154) < 1e-9);
+  assert.ok(Math.abs(result.netWithoutRts - 43804) < 1e-9);
+  assert.ok(Math.abs(result.netWithRts - 47804) < 1e-9);
+  assert.ok(Math.abs(result.netRatio - 4.3804) < 1e-9);
+  assert.equal(result.pages[0].cog, 200);
+  assert.equal(result.pages[0].rtsRate, 20);
+  assert.equal(result.pages[0].baseShippingFees, 4100);
+});
+
+test("Data Sync matches the supplied Luxe Kitchenware reference row", () => {
+  const daily = validateDailyRows([{
+    pageName: "LUXE KITCHENWARE",
+    itemName: "GOLD UTENSILS (24 PCS)",
+    cod: 299,
+    adSpend: 12351.42,
+    orderQty: 126,
+  }]);
+  const result = calculateBackendDataSync(daily, [{
+    itemName: "GOLD UTENSILS (24 PCS)",
+    itemKey: normaliseBackendItemName("GOLD UTENSILS (24 PCS)"),
+    effectiveDate: "2026-07-19",
+    rtsRate: 25,
+    cog: 72,
+  }]);
+  const page = result.pages[0];
+
+  assert.equal(page.orders, 126);
+  assert.equal(page.grossReceivable, 28106);
+  assert.ok(Math.abs(page.vat - 1482.1704) < 1e-9);
+  assert.equal(page.totalCog, 9072);
+  assert.equal(page.baseShippingFees, 5166);
+  assert.ok(Math.abs(page.codFee - 314.7872) < 1e-9);
+  assert.ok(Math.abs(page.netWithoutRts - (-280.3776)) < 1e-9);
+  assert.equal(page.rtsInventoryCog, 2304);
+  assert.ok(Math.abs(page.netWithRts - 2023.6224) < 1e-9);
 });
 
 test("data sync preserves upload order and derives totals from the page breakdown", async () => {
@@ -229,7 +260,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-1" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-2" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);

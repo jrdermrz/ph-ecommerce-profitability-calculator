@@ -2,7 +2,7 @@
   "use strict";
 
   const VAT_RATE = 0.12;
-  const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 37.5 });
+  const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 41 });
   const DATA_SYNC_API_URL = "https://fulfilrate-forecast.jrderamirez21.chatgpt.site";
 
   function finiteNumber(value, fallback = 0) {
@@ -202,14 +202,37 @@
       });
       const page = pages.get(row.pageName) ?? {
         pageName: row.pageName,
+        itemName: product.itemName,
+        cod: row.cod,
+        codFeePercent: settings.codFeePercent,
+        rtsRate: product.rtsRate,
+        cog: product.cog,
         orders: 0,
         adSpend: 0,
+        potentialRevenue: 0,
+        grossReceivable: 0,
+        vat: 0,
+        totalCog: 0,
+        baseShippingFees: 0,
+        codFee: 0,
+        rtsInventoryCog: 0,
         netWithoutRts: 0,
         netWithRts: 0,
       };
 
+      if (page.itemName !== product.itemName) page.itemName = "Multiple items";
+      if (page.cod !== row.cod) page.cod = null;
+      if (page.rtsRate !== product.rtsRate) page.rtsRate = null;
+      if (page.cog !== product.cog) page.cog = null;
       page.orders += result.orderQty;
       page.adSpend += result.adSpend;
+      page.potentialRevenue += result.cod * result.orderQty;
+      page.grossReceivable += result.grossReceivable;
+      page.vat += result.vat;
+      page.totalCog += result.totalCog;
+      page.baseShippingFees += result.baseShippingFees;
+      page.codFee += result.codFee;
+      page.rtsInventoryCog += result.rtsInventoryAddBack;
       page.netWithoutRts += result.netBeforeRts;
       page.netWithRts += result.netIncome;
       pages.set(row.pageName, page);
@@ -221,6 +244,7 @@
     const pageResults = Array.from(pages.values())
       .map((page) => ({
         ...page,
+        roas: page.adSpend > 0 ? page.potentialRevenue / page.adSpend : null,
         netRatio: page.adSpend > 0 ? page.netWithoutRts / page.adSpend : null,
       }));
     const totals = pageResults.reduce(
@@ -262,6 +286,7 @@
     maximumFractionDigits: 2,
   });
   const integer = new Intl.NumberFormat("en-PH", { maximumFractionDigits: 0 });
+  const number = new Intl.NumberFormat("en-PH", { maximumFractionDigits: 2 });
   const ratio = new Intl.NumberFormat("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -277,6 +302,10 @@
 
   function ratioText(value) {
     return value === null || !Number.isFinite(value) ? "1:—" : `1:${ratio.format(value)}`;
+  }
+
+  function decimalText(value) {
+    return value === null || !Number.isFinite(value) ? "—" : ratio.format(value);
   }
 
   const form = document.getElementById("calculator-form");
@@ -441,11 +470,22 @@
       const row = document.createElement("tr");
       const values = [
         page.pageName,
-        integer.format(page.orders),
+        page.itemName,
+        page.cod === null ? "Mixed" : money(page.cod),
+        `${number.format(page.codFeePercent)}%`,
+        page.rtsRate === null ? "Mixed" : `${number.format(page.rtsRate)}%`,
+        page.cog === null ? "Mixed" : money(page.cog),
         money(page.adSpend),
+        decimalText(page.roas),
+        integer.format(page.orders),
+        money(page.grossReceivable),
+        money(page.vat),
+        money(page.totalCog),
+        money(page.baseShippingFees),
+        money(page.codFee),
         money(page.netWithoutRts),
-        money(page.netWithRts),
         ratioText(page.netRatio),
+        money(page.rtsInventoryCog),
       ];
       for (const value of values) {
         const cell = document.createElement("td");
