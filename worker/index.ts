@@ -109,16 +109,19 @@ async function dataSyncResponse(request: Request, env: Env) {
   if (!env.DB) return json(request, { error: "Database is unavailable." }, 503);
   const contentLength = Number(request.headers.get("Content-Length") ?? 0);
   if (contentLength > 2_000_000) return json(request, { error: "The uploaded data is too large." }, 413);
-  const body = await request.json().catch(() => null) as { fileName?: unknown; rows?: unknown } | null;
+  const body = await request.json().catch(() => null) as { fileName?: unknown; rows?: unknown; dryRun?: unknown } | null;
   const rows = validateDailyRows(body?.rows);
   if (!rows.length) return json(request, { error: "No valid daily data rows were received." }, 400);
   await ensureProductMaster(env);
   const products = await productRecords(env);
   const result = calculateDataSync(rows, products);
+  const { rowResults: _privateRows, ...publicResult } = result;
+  if (body?.dryRun === true) {
+    return json(request, { ...publicResult, uploadId: null, uploadedAt: null, storedRows: rows.length, dryRun: true });
+  }
   const uploadId = crypto.randomUUID();
   const fileName = String(body?.fileName ?? "daily-data.xlsx").trim().slice(0, 180) || "daily-data.xlsx";
   const uploadedAt = await storeDataSync(env, uploadId, fileName, result);
-  const { rowResults: _privateRows, ...publicResult } = result;
   return json(request, { ...publicResult, uploadId, uploadedAt, storedRows: rows.length });
 }
 
