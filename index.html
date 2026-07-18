@@ -1040,14 +1040,18 @@ input::-webkit-inner-spin-button {
 .page-net-heading h3 { margin: 7px 0 0; font-size: 24px; letter-spacing: -0.035em; }
 .page-net-heading p { margin: 0; color: var(--muted); font-size: 10px; }
 .page-net-table-wrap { overflow-x: auto; }
-.page-net-table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.page-net-table { width: 100%; border-collapse: collapse; min-width: 1960px; }
 .page-net-table th,
 .page-net-table td { padding: 14px 18px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
 .page-net-table th:first-child,
-.page-net-table td:first-child { text-align: left; }
+.page-net-table td:first-child,
+.page-net-table th:nth-child(2),
+.page-net-table td:nth-child(2) { text-align: left; }
 .page-net-table th { color: var(--muted); background: #09130f; font-size: 8px; letter-spacing: 0.045em; text-transform: uppercase; }
 .page-net-table td { color: #cad6d0; font-size: 11px; font-weight: 700; }
-.page-net-table td:first-child { color: var(--ink); font-weight: 850; }
+.page-net-table td:first-child,
+.page-net-table td:nth-child(2) { color: var(--ink); font-weight: 850; }
+.page-net-table td:nth-child(15) { color: var(--green-bright); font-weight: 900; }
 .page-net-table tr:last-child td { border-bottom: 0; }
 
 footer {
@@ -1211,7 +1215,7 @@ input:focus-visible {
 }
 </style>
     <script src="./vendor/xlsx.full.min.js" defer></script>
-    <script src="./app.bundle.js?v=20260719-1" defer></script>
+    <script src="./app.bundle.js?v=20260719-2" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -1384,7 +1388,7 @@ input:focus-visible {
           <div class="page-net-heading"><div><span class="section-label">NET PER PAGE</span><h3>Projected profitability by page</h3></div><p id="page-net-count"></p></div>
           <div class="page-net-table-wrap">
             <table class="page-net-table">
-              <thead><tr><th>Page name</th><th>Orders</th><th>Ad spend</th><th>Net without RTS</th><th>Net with RTS</th><th>Net Ratio</th></tr></thead>
+              <thead><tr><th>Page name</th><th>Item</th><th>COD</th><th>COD fee %</th><th>% RTS</th><th>COG</th><th>Adspent</th><th>ROAS</th><th>Orders</th><th>Gross receivable</th><th>VAT</th><th>Total COG</th><th>Base SF</th><th>COD fee</th><th>Net</th><th>Net Ratio</th><th>RTS inventory COG</th></tr></thead>
               <tbody id="page-net-body"></tbody>
             </table>
           </div>
