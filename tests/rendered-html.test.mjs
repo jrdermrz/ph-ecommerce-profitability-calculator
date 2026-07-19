@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import {
   calculateDataSync as calculateBackendDataSync,
   normaliseItemName as normaliseBackendItemName,
+  parseProductMasterCsv,
   validateDailyRows,
 } from "../worker/profitability.ts";
 
@@ -63,9 +64,10 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(css, /:root\[data-theme="light"\]/);
   assert.match(css, /\.data-sync-panel\s*\{[^}]*width:\s*calc\(100% - 24px\)/s);
   assert.match(css, /\.sync-workspace\s*\{[^}]*width:\s*min\(100%, 1240px\)/s);
-  assert.match(css, /\.page-net-table-wrap\s*\{\s*overflow-x:\s*hidden/);
+  assert.match(css, /\.page-net-table-wrap\s*\{\s*overflow:\s*visible/);
   assert.match(css, /\.page-net-table\s*\{[^}]*table-layout:\s*fixed/s);
   assert.match(css, /\.page-net-table td\s*\{[^}]*font-size:\s*clamp\(11px, 0\.72vw, 14px\)/s);
+  assert.match(css, /\.page-net-table th\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/s);
   assert.match(app, /outputs\.netIncome\.textContent = money\(result\.netBeforeRts\)/);
   assert.match(app, /outputs\.netIncludingRts\.textContent = money\(result\.netIncome\)/);
 });
@@ -218,6 +220,23 @@ test("Data Sync matches the supplied Luxe Kitchenware reference row", () => {
   assert.ok(Math.abs(page.netWithRts - 2023.6224) < 1e-9);
 });
 
+test("Google Sheet CSV uses the latest valid RTS and COG record per item", () => {
+  const products = parseProductMasterCsv([
+    '"Effective Date","Item Name","RTS Rate","COG","Updated At","Notes"',
+    '"2026-06-01","GOLD UTENSILS (24 PCS)","25%","72","","old"',
+    '"2026-07-01","GOLD UTENSILS (24 PCS)","20","80","","latest"',
+    '"","STICKY GLUE MICE TRAP","0.42","10.5","",""',
+  ].join("\n"));
+
+  assert.equal(products.length, 2);
+  assert.deepEqual(
+    { rtsRate: products[0].rtsRate, cog: products[0].cog, effectiveDate: products[0].effectiveDate },
+    { rtsRate: 20, cog: 80, effectiveDate: "2026-07-01" },
+  );
+  assert.equal(products[1].rtsRate, 42);
+  assert.equal(products[1].cog, 10.5);
+});
+
 test("Data Sync applies red, green, and break-even result tones", async () => {
   const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   const sandbox = { window: {} };
@@ -282,7 +301,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-4" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-5" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);

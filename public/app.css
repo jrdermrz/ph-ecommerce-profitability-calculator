@@ -1097,7 +1097,7 @@ input::-webkit-inner-spin-button {
 
 .page-net-section {
   margin-top: 18px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .page-net-heading {
@@ -1111,7 +1111,7 @@ input::-webkit-inner-spin-button {
 
 .page-net-heading h3 { margin: 7px 0 0; font-size: 24px; letter-spacing: -0.035em; }
 .page-net-heading p { margin: 0; color: var(--muted); font-size: 10px; }
-.page-net-table-wrap { overflow-x: hidden; }
+.page-net-table-wrap { overflow: visible; }
 .page-net-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .page-net-table th,
 .page-net-table td {
@@ -1135,6 +1135,7 @@ input::-webkit-inner-spin-button {
   font-size: clamp(8px, 0.56vw, 11px);
   letter-spacing: 0.015em;
   text-transform: uppercase;
+  box-shadow: 0 1px 0 var(--line), 0 7px 14px rgba(0, 0, 0, 0.12);
 }
 .page-net-table td { color: color-mix(in srgb, var(--ink) 84%, var(--muted)); font-size: clamp(11px, 0.72vw, 14px); font-weight: 700; }
 .page-net-table td:first-child,

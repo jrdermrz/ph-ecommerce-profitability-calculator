@@ -32,6 +32,78 @@ export function normaliseItemName(value: unknown) {
     .trim();
 }
 
+function parseCsvRows(csv: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = "";
+  let quoted = false;
+  for (let index = 0; index < csv.length; index += 1) {
+    const character = csv[index];
+    if (quoted) {
+      if (character === '"' && csv[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      } else {
+        value += character;
+      }
+      continue;
+    }
+    if (character === '"') quoted = true;
+    else if (character === ",") {
+      row.push(value);
+      value = "";
+    } else if (character === "\n") {
+      row.push(value.replace(/\r$/, ""));
+      rows.push(row);
+      row = [];
+      value = "";
+    } else value += character;
+  }
+  if (value || row.length) {
+    row.push(value.replace(/\r$/, ""));
+    rows.push(row);
+  }
+  return rows;
+}
+
+function productNumber(value: unknown) {
+  const parsed = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+export function parseProductMasterCsv(csv: string): ProductRecord[] {
+  const rows = parseCsvRows(csv);
+  const headers = (rows.shift() ?? []).map((header) => header.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const column = (aliases: string[]) => headers.findIndex((header) => aliases.includes(header));
+  const effectiveDateColumn = column(["effectivedate", "date", "asofdate"]);
+  const itemNameColumn = column(["itemname", "item", "productname"]);
+  const rtsRateColumn = column(["rtsrate", "rtspercent", "rtspercentage", "rts"]);
+  const cogColumn = column(["cog", "cogs", "costofgoods", "productcost", "unitcost"]);
+  if (itemNameColumn < 0 || rtsRateColumn < 0 || cogColumn < 0) {
+    throw new Error("Product_Master must include Item Name, RTS Rate, and COG columns.");
+  }
+
+  const latest = new Map<string, { record: ProductRecord; rank: number }>();
+  rows.forEach((values, sequence) => {
+    const itemName = String(values[itemNameColumn] ?? "").trim();
+    const itemKey = normaliseItemName(itemName);
+    const rtsText = String(values[rtsRateColumn] ?? "").trim();
+    let rtsRate = productNumber(rtsText);
+    if (!rtsText.includes("%") && Math.abs(rtsRate) <= 1) rtsRate *= 100;
+    const cog = productNumber(values[cogColumn]);
+    const effectiveDate = effectiveDateColumn >= 0 ? String(values[effectiveDateColumn] ?? "").trim() : "";
+    if (!itemKey || !Number.isFinite(rtsRate) || rtsRate < 0 || rtsRate > 100 || !Number.isFinite(cog) || cog < 0) return;
+    const timestamp = Date.parse(effectiveDate);
+    const rank = Number.isFinite(timestamp) ? timestamp : sequence;
+    const current = latest.get(itemKey);
+    const record = { itemName, itemKey, effectiveDate, rtsRate, cog };
+    if (!current || rank >= current.rank) latest.set(itemKey, { record, rank });
+  });
+  return Array.from(latest.values(), (entry) => entry.record);
+}
+
 function finiteNumber(value: unknown, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;

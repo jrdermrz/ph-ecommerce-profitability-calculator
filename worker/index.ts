@@ -3,9 +3,8 @@ import appJs from "../public/app.js?raw";
 import indexHtml from "../public/index.html?raw";
 import {
   calculateDataSync,
-  normaliseItemName,
+  parseProductMasterCsv,
   validateDailyRows,
-  type ProductRecord,
 } from "./profitability";
 
 interface D1PreparedStatement {
@@ -22,14 +21,13 @@ interface D1Database {
 
 interface Env {
   DB?: D1Database;
-  PRODUCT_MASTER_JSON?: string;
-  PRODUCT_MASTER_VERSION?: string;
   ASSETS?: {
     fetch(request: Request): Promise<Response>;
   };
 }
 
 const GITHUB_ORIGIN = "https://jrdermrz.github.io";
+const PRODUCT_MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/16Wc5KzoYtIHJ1ht6j6N181PiyOvO25DfDu8BusxXm7M/gviz/tq?tqx=out:csv&gid=1641981243";
 
 function apiHeaders(request: Request) {
   const origin = request.headers.get("Origin");
@@ -50,44 +48,25 @@ function json(request: Request, value: unknown, status = 200) {
   return new Response(JSON.stringify(value), { status, headers: apiHeaders(request) });
 }
 
-function parseProductMaster(value: string): ProductRecord[] {
-  const parsed = JSON.parse(value) as unknown;
-  if (!Array.isArray(parsed)) throw new Error("Product master secret must be an array.");
-  const latest = new Map<string, ProductRecord>();
-  for (const raw of parsed) {
-    const record = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-    const itemName = String(record.itemName ?? "").trim();
-    const itemKey = normaliseItemName(itemName);
-    const rtsRate = Number(record.rtsRate);
-    const cog = Number(record.cog);
-    const effectiveDate = String(record.effectiveDate ?? "").trim();
-    if (!itemKey || !Number.isFinite(rtsRate) || rtsRate < 0 || rtsRate > 100 || !Number.isFinite(cog) || cog < 0) continue;
-    latest.set(itemKey, { itemName, itemKey, effectiveDate, rtsRate, cog });
-  }
-  return Array.from(latest.values());
-}
-
-async function ensureProductMaster(env: Env) {
+async function syncProductMasterFromGoogleSheet(env: Env) {
   if (!env.DB) throw new Error("Database is unavailable.");
-  const version = env.PRODUCT_MASTER_VERSION?.trim();
-  const source = env.PRODUCT_MASTER_JSON;
-  if (!version || !source) throw new Error("Product database has not been initialized.");
-  const current = await env.DB.prepare("SELECT value FROM app_settings WHERE key = ?").bind("product_master_version").first<{ value: string }>();
-  if (current?.value === version) return;
-  const products = parseProductMaster(source);
-  if (!products.length) throw new Error("Product database has no valid records.");
+  const sourceUrl = `${PRODUCT_MASTER_CSV_URL}&refresh=${Date.now()}`;
+  const response = await fetch(sourceUrl, {
+    cache: "no-store",
+    headers: { Accept: "text/csv" },
+  });
+  if (!response.ok) throw new Error("The live Google Sheet product database could not be loaded. Please try again.");
+  const products = parseProductMasterCsv(await response.text());
+  if (!products.length) throw new Error("The live Product_Master tab has no valid RTS and COG records.");
+  const syncedAt = new Date().toISOString();
   const statements = [env.DB.prepare("DELETE FROM product_master")];
   for (const product of products) {
     statements.push(env.DB.prepare("INSERT INTO product_master (effective_date, item_name, item_key, rts_rate, cog) VALUES (?, ?, ?, ?, ?)").bind(product.effectiveDate, product.itemName, product.itemKey, product.rtsRate, product.cog));
   }
-  statements.push(env.DB.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP").bind("product_master_version", version));
+  statements.push(env.DB.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP").bind("product_master_source", "Google Sheet Product_Master"));
+  statements.push(env.DB.prepare("INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP").bind("product_master_synced_at", syncedAt));
   await env.DB.batch(statements);
-}
-
-async function productRecords(env: Env) {
-  if (!env.DB) throw new Error("Database is unavailable.");
-  const query = await env.DB.prepare("SELECT effective_date AS effectiveDate, item_name AS itemName, item_key AS itemKey, rts_rate AS rtsRate, cog FROM product_master").all<ProductRecord>();
-  return query.results;
+  return { products, syncedAt };
 }
 
 async function storeDataSync(env: Env, uploadId: string, fileName: string, result: ReturnType<typeof calculateDataSync>) {
@@ -112,17 +91,16 @@ async function dataSyncResponse(request: Request, env: Env) {
   const body = await request.json().catch(() => null) as { fileName?: unknown; rows?: unknown; dryRun?: unknown } | null;
   const rows = validateDailyRows(body?.rows);
   if (!rows.length) return json(request, { error: "No valid daily data rows were received." }, 400);
-  await ensureProductMaster(env);
-  const products = await productRecords(env);
-  const result = calculateDataSync(rows, products);
+  const productSync = await syncProductMasterFromGoogleSheet(env);
+  const result = calculateDataSync(rows, productSync.products);
   const { rowResults: _privateRows, ...publicResult } = result;
   if (body?.dryRun === true) {
-    return json(request, { ...publicResult, uploadId: null, uploadedAt: null, storedRows: rows.length, dryRun: true });
+    return json(request, { ...publicResult, uploadId: null, uploadedAt: null, storedRows: rows.length, dryRun: true, productSource: "Google Sheet Product_Master", productSyncedAt: productSync.syncedAt });
   }
   const uploadId = crypto.randomUUID();
   const fileName = String(body?.fileName ?? "daily-data.xlsx").trim().slice(0, 180) || "daily-data.xlsx";
   const uploadedAt = await storeDataSync(env, uploadId, fileName, result);
-  return json(request, { ...publicResult, uploadId, uploadedAt, storedRows: rows.length });
+  return json(request, { ...publicResult, uploadId, uploadedAt, storedRows: rows.length, productSource: "Google Sheet Product_Master", productSyncedAt: productSync.syncedAt });
 }
 
 type EmbeddedAsset = {
@@ -168,9 +146,8 @@ export default {
 
     if (url.pathname === "/api/health" && request.method === "GET") {
       try {
-        await ensureProductMaster(env);
-        const count = await env.DB!.prepare("SELECT COUNT(*) AS count FROM product_master").first<{ count: number }>();
-        return json(request, { ok: true, productCount: count?.count ?? 0 });
+        const productSync = await syncProductMasterFromGoogleSheet(env);
+        return json(request, { ok: true, productCount: productSync.products.length, productSource: "Google Sheet Product_Master", productSyncedAt: productSync.syncedAt });
       } catch (error) {
         return json(request, { ok: false, error: error instanceof Error ? error.message : "Database initialization failed." }, 503);
       }
