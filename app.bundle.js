@@ -540,7 +540,7 @@
     const withRtsRatio = result.adSpend > 0 ? result.netWithRts / result.adSpend : null;
     sync.netWithRts.classList.add(`result-${profitabilityTone(result.netWithRts, withRtsRatio)}`);
     sync.netRatio.textContent = ratioText(result.netRatio);
-    sync.caption.textContent = `${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} saved; ${result.matchedRows} matched to the product database.`;
+    sync.caption.textContent = `Latest RTS & COG synced from Google Sheet. ${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} saved; ${result.matchedRows} matched.`;
     sync.totalAdSpend.textContent = money(result.adSpend);
     sync.totalOrders.textContent = integer.format(result.orders);
     sync.matchedItems.textContent = integer.format(result.matchedItems);
@@ -575,7 +575,7 @@
       if (!response.ok) throw new Error(payload.error || "The database could not process this file.");
       if (requestId !== syncRequestSequence) return;
       latestSyncResult = payload;
-      setFileStatus(sync.dailyStatus, `${fileName}: ${payload.storedRows} daily rows saved and computed.`, "ready");
+      setFileStatus(sync.dailyStatus, `${fileName}: ${payload.storedRows} daily rows computed using the live Google Sheet.`, "ready");
       renderDataSyncResult(payload);
     } catch (error) {
       if (requestId !== syncRequestSequence) return;
