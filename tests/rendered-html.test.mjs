@@ -70,6 +70,34 @@ test("server-renders the quick calculator and the next upload option", async () 
   assert.match(css, /\.page-net-table th\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/s);
   assert.match(app, /outputs\.netIncome\.textContent = money\(result\.netBeforeRts\)/);
   assert.match(app, /outputs\.netIncludingRts\.textContent = money\(result\.netIncome\)/);
+  assert.match(app, /loadLiveProductRecords/);
+  assert.match(app, /localFallback:\s*true/);
+  assert.match(app, /No data was saved\./);
+});
+
+test("Google Sheet table responses are converted into product rows for the browser fallback", async () => {
+  const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const sandbox = { window: {} };
+  runInNewContext(source, sandbox);
+  const { googleTableRows, parseProductRows } = sandbox.window.DataSyncCalculator;
+
+  const rows = googleTableRows({
+    cols: [
+      { id: "A", label: "Effective Date" },
+      { id: "B", label: "Item Name" },
+      { id: "C", label: "RTS Rate" },
+      { id: "D", label: "COG" },
+    ],
+    rows: [
+      { c: [{ v: "2026-07-20" }, { v: "Gold Utensils" }, { v: 25 }, { v: 72 }] },
+    ],
+  });
+  const products = parseProductRows(rows);
+
+  assert.equal(products.length, 1);
+  assert.equal(products[0].itemName, "Gold Utensils");
+  assert.equal(products[0].rtsRate, 25);
+  assert.equal(products[0].cog, 72);
 });
 
 test("calculator follows the corrected workbook formulas", async () => {
@@ -301,7 +329,7 @@ test("packages standalone and GitHub Pages quick calculators", async () => {
   assert.match(offline, /<style>[\s\S]*\.calculator-shell/);
   assert.match(offline, /window\.NetIncomeCalculator/);
   assert.doesNotMatch(offline, /<script[^>]+src="\//i);
-  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260719-5" defer><\/script>/);
+  assert.match(html, /<script src="\.\/app\.bundle\.js\?v=20260720-1" defer><\/script>/);
   assert.match(bundle, /computeNetIncome/);
   assert.match(bundle, /deliveredOrders/);
   assert.match(bundle, /rtsInventoryAddBack/);

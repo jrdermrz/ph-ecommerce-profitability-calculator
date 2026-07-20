@@ -4,6 +4,7 @@
   const VAT_RATE = 0.12;
   const DATA_SYNC_SETTINGS = Object.freeze({ codFeePercent: 1, shippingFee: 41 });
   const DATA_SYNC_API_URL = "https://fulfilrate-forecast.jrderamirez21.chatgpt.site";
+  const PRODUCT_MASTER_JSONP_URL = "https://docs.google.com/spreadsheets/d/16Wc5KzoYtIHJ1ht6j6N181PiyOvO25DfDu8BusxXm7M/gviz/tq?gid=1641981243&headers=1";
 
   function finiteNumber(value, fallback = 0) {
     const parsed = Number(value);
@@ -132,6 +133,71 @@
           Number.isFinite(row.cog) &&
           row.cog >= 0,
       );
+  }
+
+  function googleTableRows(table) {
+    const columns = Array.isArray(table?.cols) ? table.cols : [];
+    const headers = columns.map((column, index) =>
+      String(column?.label || column?.id || `Column ${index + 1}`).trim(),
+    );
+    const rows = Array.isArray(table?.rows) ? table.rows : [];
+
+    return rows.map((row) => Object.fromEntries(headers.map((header, index) => {
+      const cell = row?.c?.[index];
+      return [header, cell?.v ?? cell?.f ?? ""];
+    })));
+  }
+
+  function loadLiveProductRecords(timeoutMs = 12000) {
+    return new Promise((resolve, reject) => {
+      const callbackName = `__phProductMaster_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const script = document.createElement("script");
+      let settled = false;
+
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        script.remove();
+        try {
+          delete window[callbackName];
+        } catch {
+          window[callbackName] = undefined;
+        }
+      };
+      const fail = (message) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error(message));
+      };
+      const timer = window.setTimeout(
+        () => fail("The live product database took too long to respond."),
+        timeoutMs,
+      );
+
+      window[callbackName] = (response) => {
+        if (settled) return;
+        if (response?.status !== "ok" || !response?.table) {
+          fail("The live product database returned an invalid response.");
+          return;
+        }
+        const products = parseProductRows(googleTableRows(response.table));
+        if (!products.length) {
+          fail("The live product database has no valid RTS and COG records.");
+          return;
+        }
+        settled = true;
+        cleanup();
+        resolve(products);
+      };
+
+      script.async = true;
+      script.onerror = () => fail("The live product database could not be loaded.");
+      const url = new URL(PRODUCT_MASTER_JSONP_URL);
+      url.searchParams.set("tqx", `out:json;responseHandler:${callbackName}`);
+      url.searchParams.set("refresh", String(Date.now()));
+      script.src = url.toString();
+      document.head.append(script);
+    });
   }
 
   function parseDailyRows(rows) {
@@ -279,6 +345,7 @@
     DATA_SYNC_SETTINGS,
     normaliseItemName,
     parseProductRows,
+    googleTableRows,
     parseDailyRows,
     latestProductMap,
     calculateDataSync,
@@ -540,7 +607,9 @@
     const withRtsRatio = result.adSpend > 0 ? result.netWithRts / result.adSpend : null;
     sync.netWithRts.classList.add(`result-${profitabilityTone(result.netWithRts, withRtsRatio)}`);
     sync.netRatio.textContent = ratioText(result.netRatio);
-    sync.caption.textContent = `Latest RTS & COG synced from Google Sheet. ${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} saved; ${result.matchedRows} matched.`;
+    sync.caption.textContent = result.localFallback
+      ? `Latest RTS & COG loaded from Google Sheet. ${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} computed on this device; no upload was saved.`
+      : `Latest RTS & COG synced from Google Sheet. ${result.storedRows} daily row${result.storedRows === 1 ? "" : "s"} saved; ${result.matchedRows} matched.`;
     sync.totalAdSpend.textContent = money(result.adSpend);
     sync.totalOrders.textContent = integer.format(result.orders);
     sync.matchedItems.textContent = integer.format(result.matchedItems);
@@ -566,22 +635,55 @@
     latestSyncResult = null;
     renderDataSync();
     try {
-      const response = await fetch(`${DATA_SYNC_API_URL}/api/data-sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName, rows: dailyRows }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "The database could not process this file.");
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 12000);
+      let payload;
+      try {
+        const response = await fetch(`${DATA_SYNC_API_URL}/api/data-sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName, rows: dailyRows }),
+          signal: controller.signal,
+        });
+        payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "The database could not process this file.");
+      } finally {
+        window.clearTimeout(timeout);
+      }
       if (requestId !== syncRequestSequence) return;
       latestSyncResult = payload;
       setFileStatus(sync.dailyStatus, `${fileName}: ${payload.storedRows} daily rows computed using the live Google Sheet.`, "ready");
       renderDataSyncResult(payload);
-    } catch (error) {
+    } catch (serviceError) {
       if (requestId !== syncRequestSequence) return;
-      latestSyncResult = null;
-      setFileStatus(sync.dailyStatus, error.message, "error");
-      renderSyncEmpty("Database unavailable", error.message);
+      try {
+        setFileStatus(sync.dailyStatus, "Online service unavailable. Loading the live Google Sheet directly…");
+        const products = await loadLiveProductRecords();
+        if (requestId !== syncRequestSequence) return;
+        const result = calculateDataSync(dailyRows, products, DATA_SYNC_SETTINGS);
+        const payload = {
+          ...result,
+          storedRows: dailyRows.length,
+          uploadId: null,
+          uploadedAt: null,
+          productSource: "Live Google Sheet Product_Master",
+          productSyncedAt: new Date().toISOString(),
+          localFallback: true,
+        };
+        latestSyncResult = payload;
+        setFileStatus(
+          sync.dailyStatus,
+          `${fileName}: ${payload.storedRows} daily rows computed from the live Google Sheet. No data was saved.`,
+          "ready",
+        );
+        renderDataSyncResult(payload);
+      } catch (sheetError) {
+        if (requestId !== syncRequestSequence) return;
+        latestSyncResult = null;
+        const message = "The live product database is temporarily unreachable. Check your connection and try again.";
+        setFileStatus(sync.dailyStatus, message, "error");
+        renderSyncEmpty("Product data unavailable", message);
+      }
     }
   }
 
